@@ -1,0 +1,575 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Reports</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #263238;
+        }
+
+        header {
+            background: #07549b;
+            color: white;
+            text-align: center;
+            padding: 18px;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1100px;
+            margin: 25px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px #00000012;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 14px;
+        }
+
+        .field {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            background: white;
+        }
+
+        button {
+            border: none;
+            border-radius: 5px;
+            padding: 10px 14px;
+            background: #07549b;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover { background: #063e73; }
+
+        .secondary { background: #64748b; }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .summary .card {
+            text-align: center;
+            margin: 0;
+        }
+
+        .summary h3 { font-size: 15px; }
+
+        .summary p {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+
+        .table-wrapper { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 11px;
+            text-align: left;
+        }
+
+        th {
+            background: #07549b;
+            color: white;
+        }
+
+        tr:nth-child(even) { background: #f8fafc; }
+
+        .present {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .absent {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        #message { font-weight: bold; }
+
+        .back {
+            display: inline-block;
+            margin: 8px 0 20px;
+            color: #07549b;
+        }
+
+        @media (max-width: 600px) {
+            .summary { grid-template-columns: 1fr; }
+            .field { min-width: 100%; }
+            .card { padding: 13px; }
+        }
+
+        @media print {
+            .filters, .actions, .back, #message {
+                display: none !important;
+            }
+
+            body { background: white; }
+
+            .card, .summary .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+
+            .container {
+                width: 100%;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Attendance Reports</h1>
+    <p>Student Attendance Management System</p>
+</header>
+
+<main class="container">
+
+    <section class="card">
+        <h2>Filter Attendance</h2>
+
+        <div class="filters">
+
+            <div class="field">
+                <label for="classSelect">Select Class</label>
+                <select id="classSelect">
+                    <option value="">All Classes</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="dateSelect">Select Date</label>
+                <input type="date" id="dateSelect">
+            </div>
+
+            <div class="field">
+                <label for="searchInput">Search Roll Number</label>
+                <input type="text" id="searchInput"
+                       placeholder="Enter roll number">
+            </div>
+
+            <button type="button" id="showAllButton">
+                Show All Dates
+            </button>
+        </div>
+
+        <p id="message"></p>
+    </section>
+
+    <section class="summary">
+        <div class="card">
+            <h3>Total Records</h3>
+            <p id="totalCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Present</h3>
+            <p id="presentCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Absent</h3>
+            <p id="absentCount">0</p>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Attendance Details</h2>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>S.No.</th>
+                        <th>Date</th>
+                        <th>Class</th>
+                        <th>Roll Number</th>
+                        <th>Student Name</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="reportTable">
+                    <tr>
+                        <td colspan="6">Loading report...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button type="button" id="downloadButton">
+                Download CSV
+            </button>
+
+            <button type="button" id="printButton" class="secondary">
+                Print Report
+            </button>
+        </div>
+    </section>
+
+    <a href="index.html" class="back">Back to Home</a>
+
+</main>
+
+<script>
+const API_URL = "http://localhost:5000/api";
+
+const classSelect = document.getElementById("classSelect");
+const dateSelect = document.getElementById("dateSelect");
+const searchInput = document.getElementById("searchInput");
+const reportTable = document.getElementById("reportTable");
+const message = document.getElementById("message");
+
+let allRecords = [];
+let showAllDates = false;
+
+
+// READ SERVER RESPONSE
+async function readResponse(response) {
+    const text = await response.text();
+
+    if (!text) {
+        throw new Error("The server returned an empty response.");
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error("Invalid server response.");
+    }
+}
+
+
+// FORMAT DATE
+function formatDate(dateValue) {
+    if (!dateValue) return "";
+
+    const value = String(dateValue).slice(0, 10);
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (match) {
+        return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+
+    return value;
+}
+
+
+// SET TODAY'S DATE
+function getToday() {
+    const now = new Date();
+
+    return now.getFullYear() + "-" +
+        String(now.getMonth() + 1).padStart(2, "0") + "-" +
+        String(now.getDate()).padStart(2, "0");
+}
+
+dateSelect.value = getToday();
+
+
+// LOAD STUDENTS AND ATTENDANCE FROM MYSQL
+async function loadReportData() {
+    try {
+        message.textContent = "Loading attendance records...";
+
+        const [studentResponse, attendanceResponse] = await Promise.all([
+            fetch(`${API_URL}/students`),
+            fetch(`${API_URL}/attendance/report`)
+        ]);
+
+        const studentsData = await readResponse(studentResponse);
+        const attendanceData = await readResponse(attendanceResponse);
+
+        if (!studentResponse.ok) {
+            throw new Error(studentsData.message || "Unable to load students.");
+        }
+
+        if (!attendanceResponse.ok) {
+            throw new Error(attendanceData.message || "Unable to load attendance.");
+        }
+
+        if (!Array.isArray(studentsData) || !Array.isArray(attendanceData)) {
+            throw new Error("Invalid report data received from server.");
+        }
+
+        const studentMap = new Map(
+            studentsData.map(student => [
+                Number(student.id),
+                student
+            ])
+        );
+
+        allRecords = attendanceData.map(record => {
+            const student = studentMap.get(Number(record.student_id));
+
+            return {
+                date: record.attendance_date,
+                className: student ? student.student_class : "",
+                rollNo: student ? student.roll_no : "",
+                name: student ? student.name : "",
+                status: record.status
+            };
+        });
+
+        loadClasses();
+        showReport();
+
+    } catch (error) {
+        console.error("Report loading error:", error);
+
+        reportTable.innerHTML =
+            '<tr><td colspan="6">Unable to load attendance report.</td></tr>';
+
+        message.textContent = error.message;
+    }
+}
+
+
+// LOAD CLASS OPTIONS
+function loadClasses() {
+    const previousValue = classSelect.value;
+
+    const classes = [
+        ...new Set(
+            allRecords
+                .map(record => record.className)
+                .filter(Boolean)
+        )
+    ].sort();
+
+    classSelect.innerHTML = '<option value="">All Classes</option>';
+
+    classes.forEach(className => {
+        const option = document.createElement("option");
+        option.value = className;
+        option.textContent = className;
+        classSelect.appendChild(option);
+    });
+
+    if (classes.includes(previousValue)) {
+        classSelect.value = previousValue;
+    }
+}
+
+
+// FILTER RECORDS
+function getFilteredRecords() {
+    const selectedClass = classSelect.value;
+    const selectedDate = dateSelect.value;
+    const searchValue = searchInput.value.trim().toLowerCase();
+
+    return allRecords.filter(record => {
+        const recordDate = record.date
+            ? String(record.date).slice(0, 10)
+            : "";
+
+        const matchesClass =
+            !selectedClass || record.className === selectedClass;
+
+        const matchesDate =
+            showAllDates || !selectedDate || recordDate === selectedDate;
+
+        const matchesRoll =
+            String(record.rollNo).toLowerCase().includes(searchValue);
+
+        return matchesClass && matchesDate && matchesRoll;
+
+    }).sort((a, b) =>
+        String(b.date).localeCompare(String(a.date)) ||
+        String(a.className).localeCompare(String(b.className)) ||
+        String(a.rollNo).localeCompare(
+            String(b.rollNo),
+            undefined,
+            { numeric: true }
+        )
+    );
+}
+
+
+// DISPLAY REPORT
+function showReport() {
+    const filtered = getFilteredRecords();
+
+    reportTable.innerHTML = "";
+
+    let present = 0;
+    let absent = 0;
+
+    if (filtered.length === 0) {
+        reportTable.innerHTML =
+            '<tr><td colspan="6">No attendance records found.</td></tr>';
+    } else {
+        filtered.forEach((record, index) => {
+            if (record.status === "Present") present++;
+            if (record.status === "Absent") absent++;
+
+            const row = document.createElement("tr");
+
+            const values = [
+                index + 1,
+                formatDate(record.date),
+                record.className,
+                record.rollNo,
+                record.name,
+                record.status
+            ];
+
+            values.forEach((value, cellIndex) => {
+                const cell = document.createElement("td");
+                cell.textContent = value ?? "";
+
+                if (cellIndex === 5) {
+                    if (value === "Present") cell.className = "present";
+                    if (value === "Absent") cell.className = "absent";
+                }
+
+                row.appendChild(cell);
+            });
+
+            reportTable.appendChild(row);
+        });
+    }
+
+    document.getElementById("totalCount").textContent = filtered.length;
+    document.getElementById("presentCount").textContent = present;
+    document.getElementById("absentCount").textContent = absent;
+
+    message.textContent = `Showing ${filtered.length} attendance record(s).`;
+}
+
+
+// FILTER EVENTS
+classSelect.addEventListener("change", showReport);
+
+dateSelect.addEventListener("change", () => {
+    showAllDates = false;
+    showReport();
+});
+
+searchInput.addEventListener("input", showReport);
+
+document.getElementById("showAllButton").addEventListener("click", () => {
+    showAllDates = true;
+    showReport();
+});
+
+
+// DOWNLOAD CSV
+document.getElementById("downloadButton").addEventListener("click", () => {
+    const filtered = getFilteredRecords();
+
+    if (filtered.length === 0) {
+        alert("No records to download.");
+        return;
+    }
+
+    const rows = [
+        ["S.No.", "Date", "Class", "Roll Number", "Student Name", "Status"],
+
+        ...filtered.map((record, index) => [
+            index + 1,
+            formatDate(record.date),
+            record.className,
+            record.rollNo,
+            record.name,
+            record.status
+        ])
+    ];
+
+    const csv = rows.map(row =>
+        row.map(value => {
+            let text = String(value ?? "");
+
+            if (/^[=+\-@\t\r]/.test(text)) {
+                text = "'" + text;
+            }
+
+            return '"' + text.replace(/"/g, '""') + '"';
+        }).join(",")
+    ).join("\r\n");
+
+    const blob = new Blob(
+        ["\uFEFF" + csv],
+        { type: "text/csv;charset=utf-8;" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "attendance-report.csv";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+});
+
+
+// PRINT REPORT
+document.getElementById("printButton").addEventListener("click", () => {
+    window.print();
+});
+
+
+// INITIALIZE
+loadReportData();
+
+</script>
+
+</body>
+</html>

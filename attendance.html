@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Attendance</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #263238;
+        }
+
+        header {
+            background: #07549b;
+            color: white;
+            text-align: center;
+            padding: 16px;
+        }
+
+        header h1 {
+            margin: 0 0 5px;
+            font-size: 24px;
+        }
+
+        .dashboard {
+            width: 94%;
+            max-width: 900px;
+            margin: 22px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px #00000012;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+        }
+
+        .field {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            max-width: 320px;
+            padding: 9px;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            background: white;
+            font-size: 14px;
+        }
+
+        button {
+            background: #07549b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #063e73;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .summary .card {
+            text-align: center;
+            margin: 0;
+        }
+
+        .summary h3 {
+            font-size: 14px;
+            margin: 0 0 8px;
+        }
+
+        .summary p {
+            font-size: 23px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .secondary {
+            background: #64748b;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 540px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #07549b;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        td select {
+            width: 110px;
+        }
+
+        .status {
+            margin-top: 12px;
+        }
+
+        .success {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .back {
+            display: inline-block;
+            margin: 10px 0 20px;
+            color: #07549b;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                width: 95%;
+            }
+
+            .summary {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 13px;
+            }
+
+            .field {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Faculty Dashboard</h1>
+    <p>Student Attendance Management System</p>
+</header>
+
+<main class="dashboard">
+
+    <section class="card">
+        <h2>Mark Class Attendance</h2>
+
+        <div class="filters">
+            <div class="field">
+                <label for="classSelect">Select Class / Section</label>
+                <select id="classSelect">
+                    <option value="">Select Class</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="attendanceDate">Select Date</label>
+                <input type="date" id="attendanceDate">
+            </div>
+
+            <button type="button" id="loadButton">
+                Load Students
+            </button>
+        </div>
+
+        <p id="classMessage" class="status"></p>
+    </section>
+
+    <section class="summary">
+        <div class="card">
+            <h3>Total Students</h3>
+            <p id="totalCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Present</h3>
+            <p id="presentCount">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Absent</h3>
+            <p id="absentCount">0</p>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Student List</h2>
+
+        <div class="actions">
+            <button type="button" id="allPresent">
+                All Present
+            </button>
+
+            <button type="button" id="allAbsent" class="secondary">
+                All Absent
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>S.No.</th>
+                        <th>Roll Number</th>
+                        <th>Student Name</th>
+                        <th>Attendance</th>
+                        <th>Overall %</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentTable">
+                    <tr>
+                        <td colspan="5">
+                            Select a class to load students.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button type="button" id="saveButton">
+                Save Attendance
+            </button>
+        </div>
+
+        <p id="message" class="status"></p>
+    </section>
+
+    <a class="back" href="index.html">Back to Home</a>
+
+</main>
+
+<script>
+
+const STUDENTS_API = "http://localhost:5000/api/students";
+const ATTENDANCE_API = "http://localhost:5000/api/attendance";
+
+const classSelect = document.getElementById("classSelect");
+const dateInput = document.getElementById("attendanceDate");
+const studentTable = document.getElementById("studentTable");
+const message = document.getElementById("message");
+const classMessage = document.getElementById("classMessage");
+
+let students = [];
+let currentStudents = [];
+
+function localDate() {
+    const today = new Date();
+    return today.getFullYear() + "-" +
+        String(today.getMonth() + 1).padStart(2, "0") + "-" +
+        String(today.getDate()).padStart(2, "0");
+}
+
+dateInput.value = localDate();
+
+function showMessage(text, type = "") {
+    message.textContent = text;
+    message.className = "status " + type;
+}
+
+function updateSummary() {
+    const selects = studentTable.querySelectorAll("select[data-id]");
+    let present = 0;
+
+    selects.forEach(select => {
+        if (select.value === "Present") present++;
+    });
+
+    document.getElementById("totalCount").textContent = selects.length;
+    document.getElementById("presentCount").textContent = present;
+    document.getElementById("absentCount").textContent =
+        selects.length - present;
+}
+
+// Load students from MySQL
+async function loadStudentData() {
+    try {
+        const response = await fetch(STUDENTS_API);
+        if (!response.ok) throw new Error("Could not load students.");
+
+        const data = await response.json();
+
+        students = data.map(student => ({
+            id: student.id,
+            rollNo: String(student.roll_no || "").trim(),
+            name: String(student.name || "").trim(),
+            className: String(student.student_class || "").trim()
+        }));
+
+        classSelect.innerHTML = '<option value="">Select Class</option>';
+
+        const classes = [...new Set(
+            students.map(student => student.className).filter(Boolean)
+        )];
+
+        classes.forEach(className => {
+            const option = document.createElement("option");
+            option.value = className;
+            option.textContent = className;
+            classSelect.appendChild(option);
+        });
+
+        if (students.length === 0) {
+            classMessage.textContent =
+                "No students found. Add students in Admin Dashboard first.";
+            studentTable.innerHTML =
+                '<tr><td colspan="5">No student records found.</td></tr>';
+            updateSummary();
+            return;
+        }
+
+        classMessage.textContent =
+            students.length + " student(s) loaded from MySQL.";
+
+        if (classes.length > 0) {
+            classSelect.value = classes[0];
+            await loadStudents();
+        }
+    } catch (error) {
+        classMessage.textContent =
+            "Unable to load students. Check that the backend is running.";
+        showMessage(error.message, "error");
+    }
+}
+
+// Load attendance for selected class and date
+async function loadStudents() {
+    showMessage("");
+
+    const selectedClass = classSelect.value;
+    const selectedDate = dateInput.value;
+
+    if (!selectedClass || !selectedDate) {
+        currentStudents = [];
+        studentTable.innerHTML =
+            '<tr><td colspan="5">Please select a class and date.</td></tr>';
+        updateSummary();
+        return;
+    }
+
+    try {
+        const url = ATTENDANCE_API + "?" +
+            new URLSearchParams({
+                className: selectedClass,
+                date: selectedDate
+            });
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Unable to load attendance.");
+
+        const attendanceData = await response.json();
+
+        currentStudents = attendanceData.map(student => ({
+            id: Number(student.studentId),
+            rollNo: String(student.rollNo),
+            name: student.name,
+            status: student.status || "Present"
+        }));
+
+        studentTable.innerHTML = "";
+
+        if (currentStudents.length === 0) {
+            studentTable.innerHTML =
+                '<tr><td colspan="5">No students found for this class.</td></tr>';
+            updateSummary();
+            return;
+        }
+
+        currentStudents.forEach((student, index) => {
+            const row = document.createElement("tr");
+
+            [index + 1, student.rollNo, student.name].forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+            });
+
+            const statusCell = document.createElement("td");
+            const select = document.createElement("select");
+            select.dataset.id = String(student.id);
+
+            ["Present", "Absent"].forEach(status => {
+                const option = document.createElement("option");
+                option.value = status;
+                option.textContent = status;
+                select.appendChild(option);
+            });
+
+            select.value = student.status;
+            select.addEventListener("change", updateSummary);
+            statusCell.appendChild(select);
+            row.appendChild(statusCell);
+
+            const percentageCell = document.createElement("td");
+            percentageCell.textContent = "Loading...";
+            row.appendChild(percentageCell);
+
+            studentTable.appendChild(row);
+
+            getPercentage(student.id).then(percentage => {
+                percentageCell.textContent = percentage + "%";
+            }).catch(() => {
+                percentageCell.textContent = "N/A";
+            });
+        });
+
+        updateSummary();
+    } catch (error) {
+        showMessage(error.message, "error");
+    }
+}
+
+// Get overall attendance percentage from MySQL
+async function getPercentage(studentId) {
+    const response = await fetch(
+        ATTENDANCE_API + "/percentage/" + studentId
+    );
+
+    if (!response.ok) throw new Error("Percentage unavailable");
+
+    const data = await response.json();
+    return Number(data.percentage).toFixed(2);
+}
+
+// Load students button
+document.getElementById("loadButton").addEventListener("click", loadStudents);
+classSelect.addEventListener("change", loadStudents);
+dateInput.addEventListener("change", loadStudents);
+
+// Mark all students Present
+document.getElementById("allPresent").addEventListener("click", () => {
+    studentTable.querySelectorAll("select[data-id]").forEach(select => {
+        select.value = "Present";
+    });
+    updateSummary();
+    showMessage("All students marked Present. Click Save Attendance.", "success");
+});
+
+// Mark all students Absent
+document.getElementById("allAbsent").addEventListener("click", () => {
+    studentTable.querySelectorAll("select[data-id]").forEach(select => {
+        select.value = "Absent";
+    });
+    updateSummary();
+    showMessage("All students marked Absent. Click Save Attendance.", "success");
+});
+
+// Save attendance to MySQL
+document.getElementById("saveButton").addEventListener("click", async () => {
+    const date = dateInput.value;
+    const selects = [
+        ...studentTable.querySelectorAll("select[data-id]")
+    ];
+
+    if (!classSelect.value || !date || selects.length === 0) {
+        showMessage("Select a class and load students first.", "error");
+        return;
+    }
+
+    const records = selects.map(select => ({
+        studentId: Number(select.dataset.id),
+        status: select.value
+    }));
+
+    try {
+        const response = await fetch(ATTENDANCE_API + "/save", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ date, records })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Unable to save attendance.");
+        }
+
+        showMessage(result.message, "success");
+        await loadStudents();
+    } catch (error) {
+        showMessage(
+            error.message + " Check the backend terminal for details.",
+            "error"
+        );
+    }
+});
+
+// Start the page
+loadStudentData();
+</script>
+
+</body>
+</html>

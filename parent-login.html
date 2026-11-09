@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            width: 320px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px #0002;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #message {
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Parent Login</h2>
+
+    <form id="parentLoginForm">
+        <input
+            type="tel"
+            id="mobile"
+            placeholder="Enter registered mobile number"
+            pattern="[0-9]{10}"
+            maxlength="10"
+            required
+        >
+
+        <button type="submit">Login</button>
+    </form>
+
+    <p id="message"></p>
+</div>
+
+<script>
+    const API_URL = "http://localhost:5000/api/students";
+
+    document.getElementById("parentLoginForm")
+        .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const mobile = document.getElementById("mobile").value.trim();
+        const message = document.getElementById("message");
+
+        try {
+            const response = await fetch(
+                `${API_URL}/parent-login`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ mobile })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                message.style.color = "red";
+                message.textContent = data.message || "Login failed";
+                return;
+            }
+
+            sessionStorage.setItem(
+                "parentStudents",
+                JSON.stringify(data.students)
+            );
+
+            sessionStorage.setItem("parentMobile", mobile);
+
+            window.location.href = "parent-dashboard.html";
+
+        } catch (error) {
+            message.style.color = "red";
+            message.textContent = "Cannot connect to server.";
+        }
+    });
+</script>
+
+</body>
+</html>

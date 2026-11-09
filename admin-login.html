@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h2>Admin Login</h2>
+        <p>Student Attendance Management System</p>
+    </header>
+    <main class="container">
+        <div class="card">
+            <h2>Welcome Admin</h2>
+            <form class="login-form" onsubmit="return adminLogin(event)">
+                <p>Username</p>
+                <input type="text" id="username"
+                       placeholder="Enter username" required>
+                <p>Password</p>
+                <input type="password" id="password"
+                       placeholder="Enter password" required>
+
+                <button type="submit">Login</button>
+                <p id="message"></p>
+            </form>
+            <a href="index.html">Back to Home</a>
+        </div>
+    </main>
+    <script>
+    function adminLogin(event) {
+        event.preventDefault();
+
+        var username = document.getElementById("username").value.trim();
+        var password = document.getElementById("password").value;
+        var message = document.getElementById("message");
+
+        // Frontend demonstration only
+        if (username === "" || password === "") {
+            message.textContent = "Please enter username and password.";
+            message.style.color = "red";
+            return false;
+        }
+
+        message.textContent = "Login successful! Opening Admin Dashboard...";
+        message.style.color = "green";
+
+        setTimeout(function() {
+            window.location.href = "admin-dashboard.html";
+        }, 500);
+
+        return false;
+    }
+</script>
+</body>
+</html>

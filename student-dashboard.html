@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f3f6fb;
+            color: #222;
+        }
+
+        header {
+            background: #243b64;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #00000012;
+        }
+
+        h2 {
+            color: #243b64;
+        }
+
+        .details p {
+            font-size: 16px;
+            margin: 12px 0;
+        }
+
+        button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #243b64;
+            color: white;
+        }
+
+        .present {
+            color: green;
+            font-weight: bold;
+        }
+
+        .absent {
+            color: red;
+            font-weight: bold;
+        }
+
+        .message {
+            color: #555;
+            margin-top: 12px;
+        }
+
+        .error {
+            color: #c0392b;
+        }
+
+        @media (max-width: 600px) {
+            table {
+                font-size: 13px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Student Dashboard</h1>
+    <button onclick="logout()">Logout</button>
+</header>
+
+<main>
+
+    <section class="card">
+        <h2>Student Profile</h2>
+
+        <div class="details">
+            <p><strong>Name:</strong> <span id="studentName">Loading...</span></p>
+            <p><strong>Roll Number:</strong> <span id="rollNumber">Loading...</span></p>
+            <p><strong>Class:</strong> <span id="studentClass">Loading...</span></p>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Attendance Summary</h2>
+        <p><strong>Total Classes:</strong> <span id="totalClasses">--</span></p>
+        <p><strong>Present:</strong> <span id="presentDays">--</span></p>
+        <p><strong>Absent:</strong> <span id="absentDays">--</span></p>
+        <p><strong>Attendance Percentage:</strong> <span id="percentage">--</span></p>
+    </section>
+
+    <section class="card">
+        <h2>Attendance History</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody id="attendanceTable">
+                <tr>
+                    <td colspan="2">Loading attendance...</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p id="message" class="message"></p>
+    </section>
+
+</main>
+
+<script>
+    const API_URL = "http://localhost:5000/api";
+
+    const studentRoll = sessionStorage.getItem("studentRoll");
+    const studentToken = sessionStorage.getItem("studentToken");
+
+    function logout() {
+        sessionStorage.removeItem("studentToken");
+        sessionStorage.removeItem("studentName");
+        sessionStorage.removeItem("studentRoll");
+
+        window.location.href = "student-login.html";
+    }
+
+    async function readResponse(response) {
+        const text = await response.text();
+
+        if (!text) {
+            throw new Error("The server returned an empty response.");
+        }
+
+        try {
+            return JSON.parse(text);
+        } catch {
+            throw new Error("The server returned an invalid response.");
+        }
+    }
+
+    async function loadDashboard() {
+        if (!studentRoll || !studentToken) {
+            alert("Please login first.");
+            window.location.href = "student-login.html";
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/students`);
+            const data = await readResponse(response);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to load students.");
+            }
+
+            const students = Array.isArray(data) ? data : data.students;
+
+            if (!Array.isArray(students)) {
+                throw new Error("Invalid student data received.");
+            }
+
+            const student = students.find(
+                item => String(item.roll_no).trim().toLowerCase() ===
+                        String(studentRoll).trim().toLowerCase()
+            );
+
+            if (!student) {
+                throw new Error("Student record not found.");
+            }
+
+            document.getElementById("studentName").textContent = student.name;
+            document.getElementById("rollNumber").textContent = student.roll_no;
+            document.getElementById("studentClass").textContent =
+                student.student_class;
+
+            await loadAttendance(student.id);
+
+        } catch (error) {
+            document.getElementById("message").textContent = error.message;
+            document.getElementById("message").className = "message error";
+        }
+    }
+
+    async function loadAttendance(studentId) {
+        try {
+            const response = await fetch(
+                `${API_URL}/attendance/student/${studentId}`
+            );
+
+            const data = await readResponse(response);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to load attendance.");
+            }
+
+            // Backend returns a direct array, not data.records
+            const records = Array.isArray(data)
+                ? data
+                : (Array.isArray(data.records) ? data.records : []);
+
+            const present = records.filter(
+                record => record.status === "Present"
+            ).length;
+
+            const absent = records.filter(
+                record => record.status === "Absent"
+            ).length;
+
+            const total = records.length;
+
+            const percentage = total > 0
+                ? ((present / total) * 100).toFixed(2)
+                : "0.00";
+
+            document.getElementById("totalClasses").textContent = total;
+            document.getElementById("presentDays").textContent = present;
+            document.getElementById("absentDays").textContent = absent;
+            document.getElementById("percentage").textContent =
+                percentage + "%";
+
+            const table = document.getElementById("attendanceTable");
+            table.innerHTML = "";
+
+            if (records.length === 0) {
+                table.innerHTML =
+                    '<tr><td colspan="2">No attendance records found.</td></tr>';
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement("tr");
+
+                const dateCell = document.createElement("td");
+                const statusCell = document.createElement("td");
+
+                // Format date without UTC shifting the calendar day
+                if (record.attendance_date) {
+                    const date = new Date(record.attendance_date);
+                    dateCell.textContent = date.toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        timeZone: "UTC"
+                    });
+                } else {
+                    dateCell.textContent = "Date unavailable";
+                }
+
+                statusCell.textContent = record.status || "";
+                statusCell.className =
+                    record.status === "Present" ? "present" : "absent";
+
+                row.appendChild(dateCell);
+                row.appendChild(statusCell);
+
+                table.appendChild(row);
+            });
+
+            document.getElementById("message").textContent =
+                "Attendance loaded successfully!";
+
+            document.getElementById("message").className = "message";
+
+        } catch (error) {
+            document.getElementById("attendanceTable").innerHTML =
+                '<tr><td colspan="2">Attendance history is not available.</td></tr>';
+
+            document.getElementById("message").textContent = error.message;
+            document.getElementById("message").className = "message error";
+        }
+    }
+
+    loadDashboard();
+</script>
+
+</body>
+</html>

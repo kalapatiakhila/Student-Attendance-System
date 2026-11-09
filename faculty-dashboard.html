@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        h2 { color: #243b55; }
+
+        select, input, button {
+            padding: 10px;
+            margin: 8px 5px 8px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            border: none;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        .logout { background: #dc2626; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th { background: #e9efff; }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .summary div {
+            background: #e9efff;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #message { margin-top: 15px; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Faculty Dashboard</h2>
+
+    <p>Welcome, <strong id="facultyName"></strong></p>
+    <p>Faculty ID: <strong id="facultyID"></strong></p>
+    <p>Department: <strong id="facultyDepartment"></strong></p>
+
+    <button class="logout" onclick="logout()">Logout</button>
+
+    <hr>
+
+    <h3>Mark Student Attendance</h3>
+
+    <label>Select Class:</label>
+    <select id="classSelect">
+        <option value="">Select Class</option>
+    </select>
+
+    <label>Date:</label>
+    <input type="date" id="attendanceDate">
+
+    <button onclick="markAll('Present')">All Present</button>
+    <button onclick="markAll('Absent')">All Absent</button>
+
+    <div class="summary">
+        <div>Total: <strong id="total">0</strong></div>
+        <div>Present: <strong id="present">0</strong></div>
+        <div>Absent: <strong id="absent">0</strong></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Roll Number</th>
+                <th>Student Name</th>
+                <th>Attendance Status</th>
+            </tr>
+        </thead>
+        <tbody id="studentTable">
+            <tr>
+                <td colspan="3">Select a class to load students.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button onclick="saveAttendance()">Save Attendance</button>
+
+    <p id="message"></p>
+
+</div>
+
+<script>
+    const API = "http://localhost:5000/api";
+
+    const facultyID = sessionStorage.getItem("facultyID");
+    const facultyName = sessionStorage.getItem("facultyName");
+    const facultyDepartment = sessionStorage.getItem("facultyDepartment");
+
+    if (!facultyID) {
+        alert("Please login first.");
+        window.location.href = "faculty-login.html";
+    }
+
+    document.getElementById("facultyID").textContent = facultyID || "";
+    document.getElementById("facultyName").textContent = facultyName || "";
+    document.getElementById("facultyDepartment").textContent = facultyDepartment || "";
+
+    const today = new Date();
+    const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+        .toISOString().split("T")[0];
+
+    document.getElementById("attendanceDate").value = localDate;
+
+    let students = [];
+
+    function logout() {
+        sessionStorage.removeItem("facultyID");
+        sessionStorage.removeItem("facultyName");
+        sessionStorage.removeItem("facultyDepartment");
+        window.location.href = "faculty-login.html";
+    }
+
+    async function loadClasses() {
+        try {
+            const response = await fetch(`${API}/students`);
+            if (!response.ok) throw new Error("Could not load students");
+
+            const data = await response.json();
+
+            const classSelect = document.getElementById("classSelect");
+            const classes = [...new Set(data.map(s => s.student_class).filter(Boolean))];
+
+            classes.forEach(className => {
+                const option = document.createElement("option");
+                option.value = className;
+                option.textContent = className;
+                classSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            showMessage(error.message, "red");
+        }
+    }
+
+    async function loadStudents() {
+        const selectedClass = document.getElementById("classSelect").value;
+        const table = document.getElementById("studentTable");
+
+        if (!selectedClass) {
+            students = [];
+            table.innerHTML = '<tr><td colspan="3">Select a class.</td></tr>';
+            updateSummary();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API}/students`);
+            if (!response.ok) throw new Error("Could not load students");
+
+            const data = await response.json();
+
+            students = data.filter(s => s.student_class === selectedClass);
+
+            if (students.length === 0) {
+                table.innerHTML = '<tr><td colspan="3">No students found.</td></tr>';
+                updateSummary();
+                return;
+            }
+
+            table.innerHTML = students.map(student => `
+                <tr>
+                    <td>${escapeHTML(student.roll_no)}</td>
+                    <td>${escapeHTML(student.name)}</td>
+                    <td>
+                        <select class="status" data-id="${student.id}">
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join("");
+
+            document.querySelectorAll(".status").forEach(select => {
+                select.addEventListener("change", updateSummary);
+            });
+
+            updateSummary();
+
+        } catch (error) {
+            showMessage(error.message, "red");
+        }
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
+    }
+
+    function markAll(status) {
+        document.querySelectorAll(".status").forEach(select => {
+            select.value = status;
+        });
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const selects = [...document.querySelectorAll(".status")];
+
+        document.getElementById("total").textContent = selects.length;
+        document.getElementById("present").textContent =
+            selects.filter(s => s.value === "Present").length;
+        document.getElementById("absent").textContent =
+            selects.filter(s => s.value === "Absent").length;
+    }
+
+    async function saveAttendance() {
+        const date = document.getElementById("attendanceDate").value;
+        const message = document.getElementById("message");
+
+        if (!date) {
+            showMessage("Please select a date.", "red");
+            return;
+        }
+
+        if (students.length === 0) {
+            showMessage("Please select a class with students.", "red");
+            return;
+        }
+
+        const records = [...document.querySelectorAll(".status")].map(select => ({
+            studentId: Number(select.dataset.id),
+            status: select.value
+        }));
+
+        try {
+            const response = await fetch(`${API}/attendance/save`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    date: date,
+                    facultyId: Number(facultyID),
+                    records: records
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Attendance could not be saved");
+            }
+
+            showMessage(data.message || "Attendance saved successfully!", "green");
+
+        } catch (error) {
+            showMessage(error.message, "red");
+        }
+    }
+
+    function showMessage(message, color) {
+        const element = document.getElementById("message");
+        element.textContent = message;
+        element.style.color = color;
+    }
+
+    document.getElementById("classSelect").addEventListener("change", loadStudents);
+
+    loadClasses();
+</script>
+
+</body>
+</html>

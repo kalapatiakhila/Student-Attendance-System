@@ -1,0 +1,684 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #07549b;
+            color: white;
+        }
+
+        button {
+            margin: 3px;
+            padding: 7px 12px;
+            cursor: pointer;
+        }
+
+        .delete {
+            background: #64748b;
+            color: white;
+            border: none;
+        }
+
+        #message {
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Admin Dashboard</h1>
+    <p>Student Attendance Management System</p>
+</header>
+
+<main class="dashboard">
+
+    <h2>Welcome, Admin!</h2>
+
+    <!-- DASHBOARD SUMMARY -->
+    <div class="dashboard-cards">
+
+        <div class="dash-card">
+            <h3>Total Students</h3>
+            <p id="totalStudents">0</p>
+        </div>
+
+        <div class="dash-card">
+            <h3>Present Today</h3>
+            <p id="presentStudents">0</p>
+        </div>
+
+        <div class="dash-card">
+            <h3>Absent Today</h3>
+            <p id="absentStudents">0</p>
+        </div>
+
+        <div class="dash-card">
+            <h3>Total Faculty</h3>
+            <p id="totalFaculty">0</p>
+        </div>
+
+    </div>
+
+    <p id="message"></p>
+
+    <!-- ADD STUDENT -->
+    <section class="student-section">
+
+        <h2>Add Student</h2>
+
+        <form id="studentForm">
+
+            <input type="text" id="rollNo"
+                   placeholder="Roll Number" required>
+
+            <input type="text" id="studentName"
+                   placeholder="Student Name" required>
+
+            <input type="text" id="studentClass"
+                   placeholder="Class / Section" required>
+
+            <input type="tel" id="mobileNo"
+                   placeholder="Parent Mobile Number"
+                   pattern="[0-9]{10}"
+                   maxlength="10" required>
+
+            <button type="submit">Add Student</button>
+
+        </form>
+
+    </section>
+
+    <!-- STUDENT DETAILS -->
+    <section class="student-section">
+
+        <h2>Student Details</h2>
+
+        <input type="text" id="search"
+               placeholder="Search by Roll Number">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Roll No</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Parent Mobile</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentList">
+                    <tr>
+                        <td colspan="5">Loading students...</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    <!-- FACULTY DETAILS -->
+    <section class="student-section">
+
+        <h2>Faculty Details</h2>
+
+        <p>
+            Faculty members can register through the Faculty Login page.
+            Their registered details will appear below.
+        </p>
+
+        <input type="text" id="facultySearch"
+               placeholder="Search by Faculty ID">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Faculty ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Mobile</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="facultyList">
+                    <tr>
+                        <td colspan="6">Loading faculty...</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    <button type="button" onclick="logout()">Logout</button>
+
+</main>
+
+
+<script>
+
+// API URLS
+const API_URL = "http://localhost:5000/api/students";
+const FACULTY_API_URL = "http://localhost:5000/api/faculty";
+const ATTENDANCE_API_URL = "http://localhost:5000/api/attendance";
+
+let students = [];
+let faculty = [];
+
+const studentForm = document.getElementById("studentForm");
+const studentList = document.getElementById("studentList");
+const facultyList = document.getElementById("facultyList");
+
+
+// READ SERVER RESPONSE
+async function readResponse(response) {
+
+    const text = await response.text();
+
+    if (!text) {
+        throw new Error("Server returned an empty response.");
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error("Invalid server response.");
+    }
+}
+
+
+// SHOW MESSAGE
+function showMessage(message) {
+    document.getElementById("message").textContent = message;
+}
+
+
+// ADD STUDENT
+studentForm.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const rollNo = document.getElementById("rollNo").value.trim();
+    const name = document.getElementById("studentName").value.trim();
+    const studentClass = document.getElementById("studentClass").value.trim();
+    const mobileNo = document.getElementById("mobileNo").value.trim();
+
+    if (!/^[0-9]{10}$/.test(mobileNo)) {
+        alert("Enter a valid 10-digit mobile number.");
+        return;
+    }
+
+    try {
+
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                rollNo,
+                name,
+                studentClass,
+                mobileNo
+            })
+        });
+
+        const result = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(result.message || "Failed to add student.");
+        }
+
+        alert(result.message || "Student added successfully!");
+
+        studentForm.reset();
+
+        await loadStudents();
+
+    } catch (error) {
+        alert(error.message);
+    }
+
+});
+
+
+// LOAD STUDENTS
+async function loadStudents() {
+
+    try {
+
+        const response = await fetch(API_URL);
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Could not load students.");
+        }
+
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid student data.");
+        }
+
+        students = data.map(student => ({
+            id: student.id,
+            rollNo: student.roll_no,
+            name: student.name,
+            studentClass: student.student_class,
+            mobileNo: student.parent_mobile || ""
+        }));
+
+        displayStudents();
+
+    } catch (error) {
+
+        console.error("Student loading error:", error);
+
+        studentList.innerHTML =
+            '<tr><td colspan="5">Unable to load students.</td></tr>';
+
+        showMessage(error.message);
+
+    }
+
+}
+
+
+// DISPLAY STUDENTS
+function displayStudents() {
+
+    const searchValue = document
+        .getElementById("search")
+        .value.trim()
+        .toLowerCase();
+
+    const filtered = students.filter(student =>
+        String(student.rollNo).toLowerCase().includes(searchValue)
+    );
+
+    studentList.innerHTML = "";
+
+    document.getElementById("totalStudents").textContent = students.length;
+
+    if (filtered.length === 0) {
+
+        studentList.innerHTML =
+            '<tr><td colspan="5">No students found.</td></tr>';
+
+        return;
+    }
+
+    filtered.forEach(student => {
+
+        const row = document.createElement("tr");
+
+        [
+            student.rollNo,
+            student.name,
+            student.studentClass,
+            student.mobileNo || "Not available"
+        ].forEach(value => {
+
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+
+        });
+
+        const actions = document.createElement("td");
+
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.type = "button";
+        editButton.onclick = () => editStudent(student);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.type = "button";
+        deleteButton.className = "delete";
+        deleteButton.onclick = () => deleteStudent(student);
+
+        actions.append(editButton, deleteButton);
+
+        row.appendChild(actions);
+        studentList.appendChild(row);
+
+    });
+
+}
+
+
+// EDIT STUDENT
+async function editStudent(student) {
+
+    const newName = prompt("Enter student name:", student.name);
+
+    if (newName === null || !newName.trim()) return;
+
+    const newClass = prompt(
+        "Enter class / section:",
+        student.studentClass
+    );
+
+    if (newClass === null || !newClass.trim()) return;
+
+    const newMobile = prompt(
+        "Enter parent's mobile number:",
+        student.mobileNo
+    );
+
+    if (newMobile === null) return;
+
+    if (!/^[0-9]{10}$/.test(newMobile.trim())) {
+        alert("Enter a valid 10-digit mobile number.");
+        return;
+    }
+
+    try {
+
+        const response = await fetch(`${API_URL}/${student.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: newName.trim(),
+                studentClass: newClass.trim(),
+                mobileNo: newMobile.trim()
+            })
+        });
+
+        const result = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(result.message || "Student update failed.");
+        }
+
+        alert(result.message || "Student updated successfully!");
+
+        await loadStudents();
+
+    } catch (error) {
+        alert(error.message);
+    }
+
+}
+
+
+// DELETE STUDENT
+async function deleteStudent(student) {
+
+    const confirmed = confirm(
+        `Are you sure you want to delete ${student.name}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+        const response = await fetch(`${API_URL}/${student.id}`, {
+            method: "DELETE"
+        });
+
+        const result = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(result.message || "Student deletion failed.");
+        }
+
+        alert(result.message || "Student deleted successfully!");
+
+        await loadStudents();
+
+    } catch (error) {
+        alert(error.message);
+    }
+
+}
+
+
+// LOAD FACULTY
+async function loadFaculty() {
+
+    try {
+
+        const response = await fetch(FACULTY_API_URL);
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Could not load faculty.");
+        }
+
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid faculty data.");
+        }
+
+        // Actual faculty table columns:
+        // id, name, email, mobile, department, password_hash
+        faculty = data;
+
+        displayFaculty();
+
+    } catch (error) {
+
+        console.error("Faculty loading error:", error);
+
+        facultyList.innerHTML =
+            '<tr><td colspan="6">Unable to load faculty.</td></tr>';
+
+        showMessage(error.message);
+
+    }
+
+}
+
+
+// DISPLAY FACULTY
+function displayFaculty() {
+
+    const searchValue = document
+        .getElementById("facultySearch")
+        .value.trim()
+        .toLowerCase();
+
+    const filtered = faculty.filter(person =>
+        String(person.id).toLowerCase().includes(searchValue)
+    );
+
+    facultyList.innerHTML = "";
+
+    document.getElementById("totalFaculty").textContent = faculty.length;
+
+    if (filtered.length === 0) {
+
+        facultyList.innerHTML =
+            '<tr><td colspan="6">No faculty found.</td></tr>';
+
+        return;
+    }
+
+    filtered.forEach(person => {
+
+        const row = document.createElement("tr");
+
+        [
+            person.id,
+            person.name,
+            person.department,
+            person.email,
+            person.mobile
+        ].forEach(value => {
+
+            const cell = document.createElement("td");
+            cell.textContent = value || "Not available";
+            row.appendChild(cell);
+
+        });
+
+        const actions = document.createElement("td");
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.type = "button";
+        deleteButton.className = "delete";
+        deleteButton.onclick = () => deleteFaculty(person);
+
+        actions.appendChild(deleteButton);
+        row.appendChild(actions);
+
+        facultyList.appendChild(row);
+
+    });
+
+}
+
+
+// DELETE FACULTY
+async function deleteFaculty(person) {
+
+    const confirmed = confirm(
+        `Are you sure you want to delete faculty ${person.name}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+        const response = await fetch(
+            `${FACULTY_API_URL}/${person.id}`,
+            { method: "DELETE" }
+        );
+
+        const result = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(result.message || "Faculty deletion failed.");
+        }
+
+        alert(result.message || "Faculty deleted successfully.");
+
+        await loadFaculty();
+
+    } catch (error) {
+        alert(error.message);
+    }
+
+}
+
+
+// LOAD TODAY'S ATTENDANCE COUNTS
+async function updateAttendanceCounts() {
+
+    const today = new Date();
+
+    const date =
+        today.getFullYear() + "-" +
+        String(today.getMonth() + 1).padStart(2, "0") + "-" +
+        String(today.getDate()).padStart(2, "0");
+
+    try {
+
+        const response = await fetch(
+            `${ATTENDANCE_API_URL}/summary/today?date=${date}`
+        );
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to load attendance.");
+        }
+
+        document.getElementById("presentStudents").textContent =
+            data.present || 0;
+
+        document.getElementById("absentStudents").textContent =
+            data.absent || 0;
+
+    } catch (error) {
+
+        console.error("Attendance summary error:", error);
+
+        document.getElementById("presentStudents").textContent = "--";
+        document.getElementById("absentStudents").textContent = "--";
+
+    }
+
+}
+
+
+// SEARCH
+document.getElementById("search").addEventListener(
+    "input",
+    displayStudents
+);
+
+document.getElementById("facultySearch").addEventListener(
+    "input",
+    displayFaculty
+);
+
+
+// LOGOUT
+function logout() {
+    window.location.href = "index.html";
+}
+
+
+// INITIAL LOAD
+async function initializeDashboard() {
+
+    await Promise.all([
+        loadStudents(),
+        loadFaculty(),
+        updateAttendanceCounts()
+    ]);
+
+}
+
+initializeDashboard();
+
+</script>
+
+</body>
+</html>
