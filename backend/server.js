@@ -1,4 +1,3 @@
-
 const express = require("express");
 const cors = require("cors");
 
@@ -39,7 +38,8 @@ app.get("/api/status", (req, res) => {
 app.use("/api", (req, res) => {
     res.status(404).json({
         success: false,
-        message: "API route not found: " +
+        message:
+            "API route not found: " +
             req.method + " " + req.originalUrl
     });
 });
@@ -55,9 +55,9 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log("-----------------------------------");
     console.log("STUDENT ATTENDANCE SYSTEM STARTED");
     console.log("Server running on port: " + PORT);
