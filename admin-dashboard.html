@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -130,7 +129,6 @@
         <div class="table-wrapper">
 
             <table>
-
                 <thead>
                     <tr>
                         <th>Roll No</th>
@@ -146,7 +144,6 @@
                         <td colspan="5">Loading students...</td>
                     </tr>
                 </tbody>
-
             </table>
 
         </div>
@@ -169,7 +166,6 @@
         <div class="table-wrapper">
 
             <table>
-
                 <thead>
                     <tr>
                         <th>Faculty ID</th>
@@ -186,7 +182,6 @@
                         <td colspan="6">Loading faculty...</td>
                     </tr>
                 </tbody>
-
             </table>
 
         </div>
@@ -197,13 +192,17 @@
 
 </main>
 
-
 <script>
 
-// API URLS
-const API_URL = "http://localhost:5000/api/students";
-const FACULTY_API_URL = "http://localhost:5000/api/faculty";
-const ATTENDANCE_API_URL = "http://localhost:5000/api/attendance";
+// RAILWAY BACKEND API URLS
+const API_URL =
+    "https://student-attendance-system-production-7258.up.railway.app/api/students";
+
+const FACULTY_API_URL =
+    "https://student-attendance-system-production-7258.up.railway.app/api/faculty";
+
+const ATTENDANCE_API_URL =
+    "https://student-attendance-system-production-7258.up.railway.app/api/attendance";
 
 let students = [];
 let faculty = [];
@@ -211,7 +210,6 @@ let faculty = [];
 const studentForm = document.getElementById("studentForm");
 const studentList = document.getElementById("studentList");
 const facultyList = document.getElementById("facultyList");
-
 
 // READ SERVER RESPONSE
 async function readResponse(response) {
@@ -229,12 +227,10 @@ async function readResponse(response) {
     }
 }
 
-
 // SHOW MESSAGE
 function showMessage(message) {
     document.getElementById("message").textContent = message;
 }
-
 
 // ADD STUDENT
 studentForm.addEventListener("submit", async function(event) {
@@ -284,7 +280,6 @@ studentForm.addEventListener("submit", async function(event) {
 
 });
 
-
 // LOAD STUDENTS
 async function loadStudents() {
 
@@ -323,7 +318,6 @@ async function loadStudents() {
     }
 
 }
-
 
 // DISPLAY STUDENTS
 function displayStudents() {
@@ -388,7 +382,6 @@ function displayStudents() {
 
 }
 
-
 // EDIT STUDENT
 async function editStudent(student) {
 
@@ -445,7 +438,6 @@ async function editStudent(student) {
 
 }
 
-
 // DELETE STUDENT
 async function deleteStudent(student) {
 
@@ -477,7 +469,6 @@ async function deleteStudent(student) {
 
 }
 
-
 // LOAD FACULTY
 async function loadFaculty() {
 
@@ -494,8 +485,6 @@ async function loadFaculty() {
             throw new Error("Invalid faculty data.");
         }
 
-        // Actual faculty table columns:
-        // id, name, email, mobile, department, password_hash
         faculty = data;
 
         displayFaculty();
@@ -512,7 +501,6 @@ async function loadFaculty() {
     }
 
 }
-
 
 // DISPLAY FACULTY
 function displayFaculty() {
@@ -573,7 +561,6 @@ function displayFaculty() {
 
 }
 
-
 // DELETE FACULTY
 async function deleteFaculty(person) {
 
@@ -605,7 +592,6 @@ async function deleteFaculty(person) {
     }
 
 }
-
 
 // LOAD TODAY'S ATTENDANCE COUNTS
 async function updateAttendanceCounts() {
@@ -646,7 +632,6 @@ async function updateAttendanceCounts() {
 
 }
 
-
 // SEARCH
 document.getElementById("search").addEventListener(
     "input",
@@ -658,12 +643,10 @@ document.getElementById("facultySearch").addEventListener(
     displayFaculty
 );
 
-
 // LOGOUT
 function logout() {
     window.location.href = "index.html";
 }
-
 
 // INITIAL LOAD
 async function initializeDashboard() {
