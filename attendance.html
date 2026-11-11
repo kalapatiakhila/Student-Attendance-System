@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Attendance</title>
+    <title>Faculty Attendance Dashboard</title>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -22,11 +20,6 @@
             color: white;
             text-align: center;
             padding: 16px;
-        }
-
-        header h1 {
-            margin: 0 0 5px;
-            font-size: 24px;
         }
 
         .dashboard {
@@ -43,7 +36,7 @@
             box-shadow: 0 2px 6px #00000012;
         }
 
-        .filters {
+        .filters, .actions {
             display: flex;
             flex-wrap: wrap;
             align-items: end;
@@ -63,12 +56,10 @@
 
         input, select {
             width: 100%;
-            max-width: 320px;
-            padding: 9px;
+            padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 5px;
             background: white;
-            font-size: 14px;
         }
 
         button {
@@ -80,9 +71,9 @@
             cursor: pointer;
         }
 
-        button:hover {
-            background: #063e73;
-        }
+        button:hover { background: #063e73; }
+
+        .secondary { background: #64748b; }
 
         .summary {
             display: grid;
@@ -105,17 +96,6 @@
             font-size: 23px;
             font-weight: bold;
             margin: 0;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 14px;
-        }
-
-        .secondary {
-            background: #64748b;
         }
 
         .table-wrapper {
@@ -141,27 +121,13 @@
             color: white;
         }
 
-        tr:nth-child(even) {
-            background: #f8fafc;
-        }
+        tr:nth-child(even) { background: #f8fafc; }
 
-        td select {
-            width: 110px;
-        }
+        td select { width: 110px; }
 
-        .status {
-            margin-top: 12px;
-        }
-
-        .success {
-            color: #15803d;
-            font-weight: bold;
-        }
-
-        .error {
-            color: #b91c1c;
-            font-weight: bold;
-        }
+        .status { margin-top: 12px; }
+        .success { color: #15803d; font-weight: bold; }
+        .error { color: #b91c1c; font-weight: bold; }
 
         .back {
             display: inline-block;
@@ -170,21 +136,9 @@
         }
 
         @media (max-width: 600px) {
-            .dashboard {
-                width: 95%;
-            }
-
-            .summary {
-                grid-template-columns: 1fr;
-            }
-
-            .card {
-                padding: 13px;
-            }
-
-            .field {
-                min-width: 100%;
-            }
+            .summary { grid-template-columns: 1fr; }
+            .field { min-width: 100%; }
+            .card { padding: 13px; }
         }
     </style>
 </head>
@@ -205,7 +159,7 @@
             <div class="field">
                 <label for="classSelect">Select Class / Section</label>
                 <select id="classSelect">
-                    <option value="">Select Class</option>
+                    <option value="">Loading classes...</option>
                 </select>
             </div>
 
@@ -266,9 +220,7 @@
 
                 <tbody id="studentTable">
                     <tr>
-                        <td colspan="5">
-                            Select a class to load students.
-                        </td>
+                        <td colspan="5">Loading students...</td>
                     </tr>
                 </tbody>
             </table>
@@ -288,9 +240,13 @@
 </main>
 
 <script>
+const API_BASE =
+    "https://student-attendance-system-production-d132.up.railway.app/api";
 
-const STUDENTS_API = "http://localhost:5000/api/students";
-const ATTENDANCE_API = "http://localhost:5000/api/attendance";
+const STUDENTS_API = API_BASE + "/students";
+const ATTENDANCE_API = API_BASE + "/attendance";
+
+const facultyId = sessionStorage.getItem("facultyID");
 
 const classSelect = document.getElementById("classSelect");
 const dateInput = document.getElementById("attendanceDate");
@@ -303,6 +259,7 @@ let currentStudents = [];
 
 function localDate() {
     const today = new Date();
+
     return today.getFullYear() + "-" +
         String(today.getMonth() + 1).padStart(2, "0") + "-" +
         String(today.getDate()).padStart(2, "0");
@@ -310,45 +267,84 @@ function localDate() {
 
 dateInput.value = localDate();
 
+async function readResponse(response) {
+    const text = await response.text();
+
+    if (!text) {
+        throw new Error("Server returned an empty response.");
+    }
+
+    let data;
+
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error("Invalid server response.");
+    }
+
+    if (!response.ok) {
+        throw new Error(data.message || "Request failed.");
+    }
+
+    return data;
+}
+
 function showMessage(text, type = "") {
     message.textContent = text;
     message.className = "status " + type;
 }
 
 function updateSummary() {
-    const selects = studentTable.querySelectorAll("select[data-id]");
+    const selects =
+        studentTable.querySelectorAll("select[data-id]");
+
     let present = 0;
 
     selects.forEach(select => {
-        if (select.value === "Present") present++;
+        if (select.value === "Present") {
+            present++;
+        }
     });
 
-    document.getElementById("totalCount").textContent = selects.length;
-    document.getElementById("presentCount").textContent = present;
+    document.getElementById("totalCount").textContent =
+        selects.length;
+
+    document.getElementById("presentCount").textContent =
+        present;
+
     document.getElementById("absentCount").textContent =
         selects.length - present;
 }
 
-// Load students from MySQL
+// Load students from Railway database
 async function loadStudentData() {
     try {
-        const response = await fetch(STUDENTS_API);
-        if (!response.ok) throw new Error("Could not load students.");
+        classMessage.textContent = "Loading students...";
 
-        const data = await response.json();
+        const response = await fetch(STUDENTS_API);
+        const data = await readResponse(response);
+
+        if (!Array.isArray(data)) {
+            throw new Error("Invalid student data received.");
+        }
 
         students = data.map(student => ({
-            id: student.id,
-            rollNo: String(student.roll_no || "").trim(),
-            name: String(student.name || "").trim(),
-            className: String(student.student_class || "").trim()
+            id: Number(student.id),
+            rollNo: String(student.roll_no || ""),
+            name: String(student.name || ""),
+            className: String(student.student_class || "")
         }));
 
-        classSelect.innerHTML = '<option value="">Select Class</option>';
+        classSelect.innerHTML =
+            '<option value="">Select Class</option>';
 
-        const classes = [...new Set(
-            students.map(student => student.className).filter(Boolean)
-        )];
+        const classes = [
+            ...new Set(
+                students
+                    .map(student => student.className)
+                    .filter(Boolean)
+            )
+        ];
 
         classes.forEach(className => {
             const option = document.createElement("option");
@@ -359,28 +355,34 @@ async function loadStudentData() {
 
         if (students.length === 0) {
             classMessage.textContent =
-                "No students found. Add students in Admin Dashboard first.";
+                "No students found. Add students in Admin Dashboard.";
+
             studentTable.innerHTML =
                 '<tr><td colspan="5">No student records found.</td></tr>';
+
             updateSummary();
             return;
         }
 
         classMessage.textContent =
-            students.length + " student(s) loaded from MySQL.";
+            students.length + " students loaded successfully.";
 
         if (classes.length > 0) {
             classSelect.value = classes[0];
             await loadStudents();
         }
+
     } catch (error) {
-        classMessage.textContent =
-            "Unable to load students. Check that the backend is running.";
-        showMessage(error.message, "error");
+        classMessage.textContent = error.message;
+
+        showMessage(
+            "Unable to load students. Check the backend.",
+            "error"
+        );
     }
 }
 
-// Load attendance for selected class and date
+// Load students for selected class and date
 async function loadStudents() {
     showMessage("");
 
@@ -389,163 +391,240 @@ async function loadStudents() {
 
     if (!selectedClass || !selectedDate) {
         currentStudents = [];
+
         studentTable.innerHTML =
-            '<tr><td colspan="5">Please select a class and date.</td></tr>';
+            '<tr><td colspan="5">Select a class and date.</td></tr>';
+
         updateSummary();
         return;
     }
 
     try {
-        const url = ATTENDANCE_API + "?" +
-            new URLSearchParams({
-                className: selectedClass,
-                date: selectedDate
-            });
+        const classStudents = students.filter(
+            student => student.className === selectedClass
+        );
 
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Unable to load attendance.");
+        studentTable.innerHTML =
+            '<tr><td colspan="5">Loading attendance...</td></tr>';
 
-        const attendanceData = await response.json();
+        currentStudents = await Promise.all(
+            classStudents.map(async student => {
+                let status = "Present";
+                let percentage = 0;
 
-        currentStudents = attendanceData.map(student => ({
-            id: Number(student.studentId),
-            rollNo: String(student.rollNo),
-            name: student.name,
-            status: student.status || "Present"
-        }));
+                try {
+                    const historyResponse = await fetch(
+                        ATTENDANCE_API + "/student/" + student.id
+                    );
 
-        studentTable.innerHTML = "";
+                    const history = await readResponse(historyResponse);
 
-        if (currentStudents.length === 0) {
-            studentTable.innerHTML =
-                '<tr><td colspan="5">No students found for this class.</td></tr>';
-            updateSummary();
-            return;
-        }
+                    if (Array.isArray(history)) {
+                        const existing = history.find(record =>
+                            String(record.attendance_date).slice(0, 10) ===
+                            selectedDate
+                        );
 
-        currentStudents.forEach((student, index) => {
-            const row = document.createElement("tr");
+                        if (existing) {
+                            status = existing.status;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Attendance history error:", error);
+                }
 
-            [index + 1, student.rollNo, student.name].forEach(value => {
-                const cell = document.createElement("td");
-                cell.textContent = value;
-                row.appendChild(cell);
-            });
+                try {
+                    const percentageResponse = await fetch(
+                        ATTENDANCE_API + "/percentage/" + student.id
+                    );
 
-            const statusCell = document.createElement("td");
-            const select = document.createElement("select");
-            select.dataset.id = String(student.id);
+                    const percentageData =
+                        await readResponse(percentageResponse);
 
-            ["Present", "Absent"].forEach(status => {
-                const option = document.createElement("option");
-                option.value = status;
-                option.textContent = status;
-                select.appendChild(option);
-            });
+                    percentage =
+                        Number(percentageData.percentage || 0).toFixed(2);
 
-            select.value = student.status;
-            select.addEventListener("change", updateSummary);
-            statusCell.appendChild(select);
-            row.appendChild(statusCell);
+                } catch (error) {
+                    console.error("Percentage error:", error);
+                }
 
-            const percentageCell = document.createElement("td");
-            percentageCell.textContent = "Loading...";
-            row.appendChild(percentageCell);
+                return {
+                    ...student,
+                    status,
+                    percentage
+                };
+            })
+        );
 
-            studentTable.appendChild(row);
+        displayStudents();
 
-            getPercentage(student.id).then(percentage => {
-                percentageCell.textContent = percentage + "%";
-            }).catch(() => {
-                percentageCell.textContent = "N/A";
-            });
-        });
-
-        updateSummary();
     } catch (error) {
         showMessage(error.message, "error");
     }
 }
 
-// Get overall attendance percentage from MySQL
-async function getPercentage(studentId) {
-    const response = await fetch(
-        ATTENDANCE_API + "/percentage/" + studentId
-    );
+// Display student list
+function displayStudents() {
+    studentTable.innerHTML = "";
 
-    if (!response.ok) throw new Error("Percentage unavailable");
+    if (currentStudents.length === 0) {
+        studentTable.innerHTML =
+            '<tr><td colspan="5">No students found in this class.</td></tr>';
 
-    const data = await response.json();
-    return Number(data.percentage).toFixed(2);
-}
-
-// Load students button
-document.getElementById("loadButton").addEventListener("click", loadStudents);
-classSelect.addEventListener("change", loadStudents);
-dateInput.addEventListener("change", loadStudents);
-
-// Mark all students Present
-document.getElementById("allPresent").addEventListener("click", () => {
-    studentTable.querySelectorAll("select[data-id]").forEach(select => {
-        select.value = "Present";
-    });
-    updateSummary();
-    showMessage("All students marked Present. Click Save Attendance.", "success");
-});
-
-// Mark all students Absent
-document.getElementById("allAbsent").addEventListener("click", () => {
-    studentTable.querySelectorAll("select[data-id]").forEach(select => {
-        select.value = "Absent";
-    });
-    updateSummary();
-    showMessage("All students marked Absent. Click Save Attendance.", "success");
-});
-
-// Save attendance to MySQL
-document.getElementById("saveButton").addEventListener("click", async () => {
-    const date = dateInput.value;
-    const selects = [
-        ...studentTable.querySelectorAll("select[data-id]")
-    ];
-
-    if (!classSelect.value || !date || selects.length === 0) {
-        showMessage("Select a class and load students first.", "error");
+        updateSummary();
         return;
     }
 
-    const records = selects.map(select => ({
-        studentId: Number(select.dataset.id),
-        status: select.value
-    }));
+    currentStudents.forEach((student, index) => {
+        const row = document.createElement("tr");
 
-    try {
-        const response = await fetch(ATTENDANCE_API + "/save", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ date, records })
+        [
+            index + 1,
+            student.rollNo,
+            student.name
+        ].forEach(value => {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
         });
 
-        const result = await response.json();
+        const statusCell = document.createElement("td");
 
-        if (!response.ok) {
-            throw new Error(result.message || "Unable to save attendance.");
+        const select = document.createElement("select");
+        select.dataset.id = String(student.id);
+
+        ["Present", "Absent"].forEach(status => {
+            const option = document.createElement("option");
+            option.value = status;
+            option.textContent = status;
+            select.appendChild(option);
+        });
+
+        select.value = student.status;
+
+        select.addEventListener("change", updateSummary);
+
+        statusCell.appendChild(select);
+        row.appendChild(statusCell);
+
+        const percentageCell = document.createElement("td");
+        percentageCell.textContent = student.percentage + "%";
+        row.appendChild(percentageCell);
+
+        studentTable.appendChild(row);
+    });
+
+    updateSummary();
+}
+
+// Load students button
+document.getElementById("loadButton")
+    .addEventListener("click", loadStudents);
+
+classSelect.addEventListener("change", loadStudents);
+dateInput.addEventListener("change", loadStudents);
+
+// Mark all Present
+document.getElementById("allPresent")
+    .addEventListener("click", () => {
+
+        studentTable
+            .querySelectorAll("select[data-id]")
+            .forEach(select => {
+                select.value = "Present";
+            });
+
+        updateSummary();
+
+        showMessage(
+            "All students marked Present. Click Save Attendance.",
+            "success"
+        );
+    });
+
+// Mark all Absent
+document.getElementById("allAbsent")
+    .addEventListener("click", () => {
+
+        studentTable
+            .querySelectorAll("select[data-id]")
+            .forEach(select => {
+                select.value = "Absent";
+            });
+
+        updateSummary();
+
+        showMessage(
+            "All students marked Absent. Click Save Attendance.",
+            "success"
+        );
+    });
+
+// Save attendance
+document.getElementById("saveButton")
+    .addEventListener("click", async () => {
+
+        const date = dateInput.value;
+
+        const selects = [
+            ...studentTable.querySelectorAll("select[data-id]")
+        ];
+
+        if (!facultyId) {
+            showMessage(
+                "Faculty ID not found. Please login again.",
+                "error"
+            );
+            return;
         }
 
-        showMessage(result.message, "success");
-        await loadStudents();
-    } catch (error) {
-        showMessage(
-            error.message + " Check the backend terminal for details.",
-            "error"
-        );
-    }
-});
+        if (!date || !classSelect.value || selects.length === 0) {
+            showMessage(
+                "Select a class and load students first.",
+                "error"
+            );
+            return;
+        }
 
-// Start the page
+        const records = selects.map(select => ({
+            studentId: Number(select.dataset.id),
+            status: select.value
+        }));
+
+        try {
+            showMessage("Saving attendance...");
+
+            const response = await fetch(ATTENDANCE_API + "/save", {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    date: date,
+                    facultyId: Number(facultyId),
+                    records: records
+                })
+            });
+
+            const result = await readResponse(response);
+
+            showMessage(
+                result.message || "Attendance saved successfully!",
+                "success"
+            );
+
+            await loadStudents();
+
+        } catch (error) {
+            showMessage(error.message, "error");
+        }
+    });
+
+// Start dashboard
 loadStudentData();
+
 </script>
 
 </body>

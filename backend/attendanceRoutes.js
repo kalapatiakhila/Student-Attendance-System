@@ -1,85 +1,59 @@
-
 const express = require("express");
-const router = express.Router();
 const db = require("./db");
 
-// GET: Today's attendance summary
+const router = express.Router();
+
+// Get attendance summary for today
 router.get("/summary/today", (req, res) => {
     const date = req.query.date;
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return res.status(400).json({
-            success: false,
-            message: "Please provide a valid date in YYYY-MM-DD format"
-        });
-    }
-
     const sql = `
         SELECT
-            COUNT(CASE WHEN status = 'Present' THEN 1 END) AS present,
-            COUNT(CASE WHEN status = 'Absent' THEN 1 END) AS absent
+            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS present,
+            SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) AS absent
         FROM attendance
         WHERE attendance_date = ?
     `;
 
     db.query(sql, [date], (err, results) => {
         if (err) {
-            console.error("Attendance summary error:", err);
+            console.error("Summary error:", err);
             return res.status(500).json({
                 success: false,
-                message: "Could not load attendance summary"
+                message: "Could not load attendance summary."
             });
         }
 
-        const present = Number(results[0].present) || 0;
-        const absent = Number(results[0].absent) || 0;
-
         res.json({
             success: true,
-            present: present,
-            absent: absent,
-            presentToday: present,
-            absentToday: absent,
-            presentCount: present,
-            absentCount: absent
+            present: Number(results[0].present || 0),
+            absent: Number(results[0].absent || 0)
         });
     });
 });
 
-
-// GET: Get attendance for one student
+// Get attendance history for one student
 router.get("/student/:studentId", (req, res) => {
-    const studentId = req.params.studentId;
-
-    if (!Number.isInteger(Number(studentId)) || Number(studentId) <= 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid student ID"
-        });
-    }
-
     const sql = `
         SELECT
-            a.id,
             a.student_id,
-            a.faculty_id,
             a.attendance_date,
             a.status,
             s.name AS student_name,
             s.roll_no,
             s.student_class
         FROM attendance a
-        JOIN students s ON a.student_id = s.id
+        JOIN students s ON s.id = a.student_id
         WHERE a.student_id = ?
         ORDER BY a.attendance_date DESC
     `;
 
-    db.query(sql, [studentId], (err, results) => {
+    db.query(sql, [req.params.studentId], (err, results) => {
         if (err) {
             console.error("Student attendance error:", err);
             return res.status(500).json({
                 success: false,
-                message: "Could not retrieve student attendance."
+                message: "Could not load student attendance."
             });
         }
 
@@ -87,11 +61,8 @@ router.get("/student/:studentId", (req, res) => {
     });
 });
 
-
-// GET: Get attendance percentage for one student
+// Get attendance percentage
 router.get("/percentage/:studentId", (req, res) => {
-    const studentId = req.params.studentId;
-
     const sql = `
         SELECT
             COUNT(*) AS totalDays,
@@ -101,123 +72,114 @@ router.get("/percentage/:studentId", (req, res) => {
         WHERE student_id = ?
     `;
 
-    db.query(sql, [studentId], (err, results) => {
+    db.query(sql, [req.params.studentId], (err, results) => {
         if (err) {
-            console.error("Attendance percentage error:", err);
+            console.error("Percentage error:", err);
             return res.status(500).json({
                 success: false,
                 message: "Could not calculate attendance percentage."
             });
         }
 
-        const totalDays = Number(results[0].totalDays) || 0;
-        const presentDays = Number(results[0].presentDays) || 0;
-        const absentDays = Number(results[0].absentDays) || 0;
+        const totalDays = Number(results[0].totalDays || 0);
+        const presentDays = Number(results[0].presentDays || 0);
+        const absentDays = Number(results[0].absentDays || 0);
 
         const percentage = totalDays > 0
-            ? Number(((presentDays / totalDays) * 100).toFixed(2))
+            ? (presentDays / totalDays) * 100
             : 0;
 
         res.json({
             totalDays,
             presentDays,
             absentDays,
-            percentage
+            percentage: Number(percentage.toFixed(2))
         });
     });
 });
 
-
-// POST: Save student attendance
+// Save attendance
 router.post("/save", (req, res) => {
     const { date, facultyId, records } = req.body;
 
     if (!date || !facultyId || !Array.isArray(records) || records.length === 0) {
         return res.status(400).json({
-            message: "Date, faculty ID and attendance records are required"
+            success: false,
+            message: "Date, faculty ID and attendance records are required."
         });
     }
 
-    const validRecords = records.every(record =>
-        record.studentId &&
-        ["Present", "Absent"].includes(record.status)
-    );
+    const checkFaculty = "SELECT id FROM faculty WHERE id = ?";
 
-    if (!validRecords) {
-        return res.status(400).json({
-            message: "Invalid student ID or attendance status"
-        });
-    }
+    db.query(checkFaculty, [facultyId], (err, facultyResults) => {
+        if (err) {
+            console.error("Faculty check error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Could not verify faculty."
+            });
+        }
 
-    db.query(
-        "SELECT id FROM faculty WHERE id = ?",
-        [facultyId],
-        (facultyErr, facultyResults) => {
-            if (facultyErr) {
-                console.error(facultyErr);
-                return res.status(500).json({
-                    message: "Database error while checking faculty"
-                });
-            }
+        if (facultyResults.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Faculty account not found."
+            });
+        }
 
-            if (facultyResults.length === 0) {
-                return res.status(404).json({
-                    message: "Faculty not found. Please login again."
-                });
-            }
+        let completed = 0;
+        let failed = false;
 
-            const studentIds = records.map(record => record.studentId);
+        records.forEach(record => {
+            const { studentId, status } = record;
 
-            db.query(
-                "SELECT id FROM students WHERE id IN (?)",
-                [studentIds],
-                (studentErr, studentResults) => {
-                    if (studentErr) {
-                        console.error(studentErr);
-                        return res.status(500).json({
-                            message: "Database error while checking students"
-                        });
-                    }
-
-                    if (studentResults.length !== studentIds.length) {
-                        return res.status(400).json({
-                            message: "One or more students do not exist"
-                        });
-                    }
-
-                    const values = records.map(record => [
-                        record.studentId,
-                        Number(facultyId),
-                        date,
-                        record.status
-                    ]);
-
-                    const sql = `
-                        INSERT INTO attendance
-                        (student_id, faculty_id, attendance_date, status)
-                        VALUES ?
-                        ON DUPLICATE KEY UPDATE
-                        faculty_id = VALUES(faculty_id),
-                        status = VALUES(status)
-                    `;
-
-                    db.query(sql, [values], (saveErr) => {
-                        if (saveErr) {
-                            console.error(saveErr);
-                            return res.status(500).json({
-                                message: "Failed to save attendance."
-                            });
-                        }
-
-                        res.json({
-                            success: true,
-                            message: "Attendance saved successfully!"
-                        });
+            if (!studentId || !["Present", "Absent"].includes(status)) {
+                if (!failed) {
+                    failed = true;
+                    return res.status(400).json({
+                        success: false,
+                        message: "Invalid attendance record."
                     });
                 }
-            );
-        }
-    );
+                return;
+            }
+
+            const sql = `
+                INSERT INTO attendance
+                    (student_id, faculty_id, attendance_date, status)
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    faculty_id = VALUES(faculty_id),
+                    status = VALUES(status)
+            `;
+
+            db.query(sql, [studentId, facultyId, date, status], err => {
+                if (err) {
+                    console.error("Attendance save error:", err);
+
+                    if (!failed) {
+                        failed = true;
+                        return res.status(500).json({
+                            success: false,
+                            message: "Could not save attendance."
+                        });
+                    }
+                    return;
+                }
+
+                if (failed) return;
+
+                completed++;
+
+                if (completed === records.length) {
+                    res.json({
+                        success: true,
+                        message: "Attendance saved successfully!"
+                    });
+                }
+            });
+        });
+    });
 });
 
 module.exports = router;
