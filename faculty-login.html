@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Login - Student Attendance System</title>
+
     <style>
         * { box-sizing: border-box; }
 
@@ -28,9 +29,17 @@
             box-shadow: 0 4px 18px rgba(0,0,0,0.12);
         }
 
-        h2 { text-align: center; color: #1e3a8a; margin-top: 0; }
+        h2 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-top: 0;
+        }
 
-        .tabs { display: flex; margin-bottom: 22px; border-bottom: 1px solid #ddd; }
+        .tabs {
+            display: flex;
+            margin-bottom: 22px;
+            border-bottom: 1px solid #ddd;
+        }
 
         .tabs button {
             width: 50%;
@@ -94,9 +103,11 @@
         .hidden { display: none; }
     </style>
 </head>
+
 <body>
 
 <div class="container">
+
     <h2>Faculty Portal</h2>
 
     <div class="tabs">
@@ -107,57 +118,71 @@
     <form id="loginForm">
         <div class="form-group">
             <label for="loginIdentifier">Email or Mobile Number</label>
-            <input type="text" id="loginIdentifier" required placeholder="Enter Email or Mobile Number">
+            <input type="text" id="loginIdentifier" required
+                   placeholder="Enter Email or Mobile Number">
         </div>
 
         <div class="form-group">
             <label for="loginPassword">Password</label>
-            <input type="password" id="loginPassword" required placeholder="Enter Password">
+            <input type="password" id="loginPassword" required
+                   placeholder="Enter Password">
         </div>
 
         <button type="submit" class="submit-btn">Login</button>
     </form>
 
     <form id="registerForm" class="hidden">
+
         <div class="form-group">
             <label for="facultyName">Full Name</label>
-            <input type="text" id="facultyName" required placeholder="Enter Full Name">
+            <input type="text" id="facultyName" required
+                   placeholder="Enter Full Name">
         </div>
 
         <div class="form-group">
             <label for="facultyMobile">Mobile Number</label>
-            <input type="tel" id="facultyMobile" maxlength="10" pattern="[0-9]{10}" required placeholder="Enter 10-digit Mobile Number">
+            <input type="tel" id="facultyMobile" maxlength="10"
+                   pattern="[0-9]{10}" required
+                   placeholder="Enter 10-digit Mobile Number">
         </div>
 
         <div class="form-group">
             <label for="facultyDepartment">Department</label>
-            <input type="text" id="facultyDepartment" required placeholder="Enter Department">
+            <input type="text" id="facultyDepartment" required
+                   placeholder="Enter Department">
         </div>
 
         <div class="form-group">
             <label for="facultyEmail">Email</label>
-            <input type="email" id="facultyEmail" required placeholder="Enter Email Address">
+            <input type="email" id="facultyEmail" required
+                   placeholder="Enter Email Address">
         </div>
 
         <div class="form-group">
             <label for="registerPassword">Password</label>
-            <input type="password" id="registerPassword" minlength="6" required placeholder="Create Password">
+            <input type="password" id="registerPassword"
+                   minlength="6" required placeholder="Create Password">
         </div>
 
         <div class="form-group">
             <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" minlength="6" required placeholder="Confirm Password">
+            <input type="password" id="confirmPassword"
+                   minlength="6" required placeholder="Confirm Password">
         </div>
 
         <button type="submit" class="submit-btn">Register</button>
     </form>
 
     <p id="message"></p>
+
     <a href="index.html" class="home-link">Back to Home</a>
+
 </div>
 
 <script>
-    const API_URL = "http://localhost:5000/api/faculty";
+    // CORRECT RAILWAY BACKEND URL
+    const API_URL =
+        "https://student-attendance-system-production-d132.up.railway.app/api/faculty";
 
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
@@ -166,20 +191,24 @@
     function showLogin() {
         loginForm.classList.remove("hidden");
         registerForm.classList.add("hidden");
+
         document.getElementById("loginTab").classList.add("active");
         document.getElementById("registerTab").classList.remove("active");
+
         message.textContent = "";
     }
 
     function showRegister() {
         registerForm.classList.remove("hidden");
         loginForm.classList.add("hidden");
+
         document.getElementById("registerTab").classList.add("active");
         document.getElementById("loginTab").classList.remove("active");
+
         message.textContent = "";
     }
 
-    // Registration
+    // REGISTER FACULTY
     registerForm.addEventListener("submit", async function(event) {
         event.preventDefault();
 
@@ -214,8 +243,16 @@
         try {
             const response = await fetch(API_URL + "/register", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, mobile, department, email, password })
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name,
+                    mobile,
+                    department,
+                    email,
+                    password
+                })
             });
 
             const data = await response.json();
@@ -225,21 +262,28 @@
             }
 
             message.style.color = "green";
-            message.textContent = data.message + " Your Faculty ID is: " + data.facultyId;
+            message.textContent =
+                data.message +
+                (data.facultyId ? " Your Faculty ID is: " + data.facultyId : "");
+
             registerForm.reset();
 
         } catch (error) {
+            console.error("Faculty registration error:", error);
             message.style.color = "red";
             message.textContent = error.message;
         }
     });
 
-    // Login
+    // FACULTY LOGIN
     loginForm.addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        const identifier = document.getElementById("loginIdentifier").value.trim();
-        const password = document.getElementById("loginPassword").value;
+        const identifier =
+            document.getElementById("loginIdentifier").value.trim();
+
+        const password =
+            document.getElementById("loginPassword").value;
 
         message.style.color = "#333";
         message.textContent = "Logging in...";
@@ -247,19 +291,28 @@
         try {
             const response = await fetch(API_URL + "/login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ identifier, password })
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    identifier,
+                    password
+                })
             });
 
             const data = await response.json();
 
-            if (!response.ok || !data.success || !data.faculty || !data.faculty.id) {
-                throw new Error(data.message || "Login response is incomplete.");
+            if (!response.ok || !data.success ||
+                !data.faculty || !data.faculty.id) {
+                throw new Error(data.message || "Login failed.");
             }
 
             sessionStorage.setItem("facultyID", data.faculty.id);
-            sessionStorage.setItem("facultyName", data.faculty.name);
-            sessionStorage.setItem("facultyDepartment", data.faculty.department);
+            sessionStorage.setItem("facultyName", data.faculty.name || "");
+            sessionStorage.setItem(
+                "facultyDepartment",
+                data.faculty.department || ""
+            );
 
             message.style.color = "green";
             message.textContent = "Login successful!";
