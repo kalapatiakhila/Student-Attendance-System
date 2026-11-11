@@ -1,5 +1,10 @@
 const express = require("express");
 const cors = require("cors");
+const db = require("./db");
+
+const studentRoutes = require("./studentRoutes");
+const facultyRoutes = require("./facultyRoutes");
+const attendanceRoutes = require("./attendanceRoutes");
 
 const app = express();
 
@@ -8,39 +13,59 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-require("./db");
-
-// Import route files
-const studentRoutes = require("./studentRoutes");
-const attendanceRoutes = require("./attendanceRoutes");
-const facultyRoutes = require("./facultyRoutes");
-
-// API routes
-app.use("/api/students", studentRoutes);
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/faculty", facultyRoutes);
-
-// Home page
+// Home route
 app.get("/", (req, res) => {
-    res.send("Student Attendance API is running!");
-});
-
-// Server status
-app.get("/api/status", (req, res) => {
     res.json({
         success: true,
-        message: "Student Attendance API is working!"
+        message: "Student Attendance Management System Backend is running!"
     });
 });
 
-// Unknown API route
+// Health check
+app.get("/api/health", (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: "Student Attendance Management System Backend is running"
+    });
+});
+
+// Status route
+app.get("/api/status", (req, res) => {
+    res.json({
+        success: true,
+        message: "Backend is active"
+    });
+});
+
+// Database test
+app.get("/api/db-test", (req, res) => {
+    db.query("SELECT 1 AS test", (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Database connection failed"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Database connected successfully",
+            data: results
+        });
+    });
+});
+
+// API routes
+app.use("/api/students", studentRoutes);
+app.use("/api/faculty", facultyRoutes);
+app.use("/api/attendance", attendanceRoutes);
+
+// Unknown API routes
 app.use("/api", (req, res) => {
     res.status(404).json({
         success: false,
-        message:
-            "API route not found: " +
-            req.method + " " + req.originalUrl
+        message: "API route not found: " + req.method + " " + req.originalUrl
     });
 });
 
@@ -50,7 +75,7 @@ app.use((err, req, res, next) => {
 
     res.status(500).json({
         success: false,
-        message: "Internal server error."
+        message: "Internal server error"
     });
 });
 
