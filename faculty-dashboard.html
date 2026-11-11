@@ -70,6 +70,20 @@
         }
 
         #message { margin-top: 15px; }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 12px;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
     </style>
 </head>
 
@@ -114,6 +128,7 @@
                 <th>Attendance Status</th>
             </tr>
         </thead>
+
         <tbody id="studentTable">
             <tr>
                 <td colspan="3">Select a class to load students.</td>
@@ -128,186 +143,259 @@
 </div>
 
 <script>
-    const API = "http://localhost:5000/api";
 
-    const facultyID = sessionStorage.getItem("facultyID");
-    const facultyName = sessionStorage.getItem("facultyName");
-    const facultyDepartment = sessionStorage.getItem("facultyDepartment");
+// RAILWAY BACKEND API URL
+const API = "https://student-attendance-system-production-d132.up.railway.app/api";
 
-    if (!facultyID) {
-        alert("Please login first.");
-        window.location.href = "faculty-login.html";
-    }
+// FACULTY DETAILS
+const facultyID = sessionStorage.getItem("facultyID");
+const facultyName = sessionStorage.getItem("facultyName");
+const facultyDepartment = sessionStorage.getItem("facultyDepartment");
 
-    document.getElementById("facultyID").textContent = facultyID || "";
-    document.getElementById("facultyName").textContent = facultyName || "";
-    document.getElementById("facultyDepartment").textContent = facultyDepartment || "";
+// CHECK FACULTY LOGIN
+if (!facultyID) {
+    alert("Please login first.");
+    window.location.href = "faculty-login.html";
+}
 
-    const today = new Date();
-    const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
-        .toISOString().split("T")[0];
+// DISPLAY FACULTY DETAILS
+document.getElementById("facultyID").textContent = facultyID || "";
+document.getElementById("facultyName").textContent = facultyName || "";
+document.getElementById("facultyDepartment").textContent =
+    facultyDepartment || "";
 
-    document.getElementById("attendanceDate").value = localDate;
+// SET TODAY'S DATE
+const today = new Date();
 
-    let students = [];
+const localDate = new Date(
+    today.getTime() - today.getTimezoneOffset() * 60000
+).toISOString().split("T")[0];
 
-    function logout() {
-        sessionStorage.removeItem("facultyID");
-        sessionStorage.removeItem("facultyName");
-        sessionStorage.removeItem("facultyDepartment");
-        window.location.href = "faculty-login.html";
-    }
+document.getElementById("attendanceDate").value = localDate;
 
-    async function loadClasses() {
-        try {
-            const response = await fetch(`${API}/students`);
-            if (!response.ok) throw new Error("Could not load students");
+let students = [];
 
-            const data = await response.json();
+// LOGOUT
+function logout() {
+    sessionStorage.removeItem("facultyID");
+    sessionStorage.removeItem("facultyName");
+    sessionStorage.removeItem("facultyDepartment");
 
-            const classSelect = document.getElementById("classSelect");
-            const classes = [...new Set(data.map(s => s.student_class).filter(Boolean))];
+    window.location.href = "faculty-login.html";
+}
 
-            classes.forEach(className => {
-                const option = document.createElement("option");
-                option.value = className;
-                option.textContent = className;
-                classSelect.appendChild(option);
-            });
+// LOAD CLASSES FROM DATABASE
+async function loadClasses() {
+    try {
+        const response = await fetch(`${API}/students`);
 
-        } catch (error) {
-            showMessage(error.message, "red");
-        }
-    }
-
-    async function loadStudents() {
-        const selectedClass = document.getElementById("classSelect").value;
-        const table = document.getElementById("studentTable");
-
-        if (!selectedClass) {
-            students = [];
-            table.innerHTML = '<tr><td colspan="3">Select a class.</td></tr>';
-            updateSummary();
-            return;
+        if (!response.ok) {
+            throw new Error("Could not load students.");
         }
 
-        try {
-            const response = await fetch(`${API}/students`);
-            if (!response.ok) throw new Error("Could not load students");
+        const data = await response.json();
 
-            const data = await response.json();
+        const classSelect = document.getElementById("classSelect");
 
-            students = data.filter(s => s.student_class === selectedClass);
+        const classes = [
+            ...new Set(data.map(s => s.student_class).filter(Boolean))
+        ];
 
-            if (students.length === 0) {
-                table.innerHTML = '<tr><td colspan="3">No students found.</td></tr>';
-                updateSummary();
-                return;
-            }
+        classSelect.innerHTML = '<option value="">Select Class</option>';
 
-            table.innerHTML = students.map(student => `
-                <tr>
-                    <td>${escapeHTML(student.roll_no)}</td>
-                    <td>${escapeHTML(student.name)}</td>
-                    <td>
-                        <select class="status" data-id="${student.id}">
-                            <option value="Present">Present</option>
-                            <option value="Absent">Absent</option>
-                        </select>
-                    </td>
-                </tr>
-            `).join("");
+        classes.forEach(className => {
+            const option = document.createElement("option");
 
-            document.querySelectorAll(".status").forEach(select => {
-                select.addEventListener("change", updateSummary);
-            });
+            option.value = className;
+            option.textContent = className;
 
-            updateSummary();
-
-        } catch (error) {
-            showMessage(error.message, "red");
-        }
-    }
-
-    function escapeHTML(value) {
-        return String(value ?? "").replace(/[&<>"']/g, char => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        })[char]);
-    }
-
-    function markAll(status) {
-        document.querySelectorAll(".status").forEach(select => {
-            select.value = status;
+            classSelect.appendChild(option);
         });
-        updateSummary();
-    }
 
-    function updateSummary() {
-        const selects = [...document.querySelectorAll(".status")];
-
-        document.getElementById("total").textContent = selects.length;
-        document.getElementById("present").textContent =
-            selects.filter(s => s.value === "Present").length;
-        document.getElementById("absent").textContent =
-            selects.filter(s => s.value === "Absent").length;
-    }
-
-    async function saveAttendance() {
-        const date = document.getElementById("attendanceDate").value;
-        const message = document.getElementById("message");
-
-        if (!date) {
-            showMessage("Please select a date.", "red");
-            return;
+        if (classes.length === 0) {
+            showMessage("No student classes found.", "red");
         }
+
+    } catch (error) {
+        showMessage(error.message, "red");
+    }
+}
+
+// LOAD STUDENTS BASED ON SELECTED CLASS
+async function loadStudents() {
+    const selectedClass = document.getElementById("classSelect").value;
+    const table = document.getElementById("studentTable");
+
+    if (!selectedClass) {
+        students = [];
+
+        table.innerHTML =
+            '<tr><td colspan="3">Select a class.</td></tr>';
+
+        updateSummary();
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API}/students`);
+
+        if (!response.ok) {
+            throw new Error("Could not load students.");
+        }
+
+        const data = await response.json();
+
+        students = data.filter(
+            student => student.student_class === selectedClass
+        );
 
         if (students.length === 0) {
-            showMessage("Please select a class with students.", "red");
+            table.innerHTML =
+                '<tr><td colspan="3">No students found.</td></tr>';
+
+            updateSummary();
             return;
         }
 
-        const records = [...document.querySelectorAll(".status")].map(select => ({
-            studentId: Number(select.dataset.id),
-            status: select.value
-        }));
+        table.innerHTML = students.map(student => `
+            <tr>
+                <td>${escapeHTML(student.roll_no)}</td>
+                <td>${escapeHTML(student.name)}</td>
+                <td>
+                    <select class="status" data-id="${Number(student.id)}">
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                    </select>
+                </td>
+            </tr>
+        `).join("");
 
-        try {
-            const response = await fetch(`${API}/attendance/save`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    date: date,
-                    facultyId: Number(facultyID),
-                    records: records
-                })
-            });
+        document.querySelectorAll(".status").forEach(select => {
+            select.addEventListener("change", updateSummary);
+        });
 
-            const data = await response.json();
+        updateSummary();
 
-            if (!response.ok) {
-                throw new Error(data.message || "Attendance could not be saved");
-            }
+        showMessage("Students loaded successfully.", "green");
 
-            showMessage(data.message || "Attendance saved successfully!", "green");
+    } catch (error) {
+        showMessage(error.message, "red");
+    }
+}
 
-        } catch (error) {
-            showMessage(error.message, "red");
+// PREVENT HTML INJECTION
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+// MARK ALL STUDENTS
+function markAll(status) {
+    document.querySelectorAll(".status").forEach(select => {
+        select.value = status;
+    });
+
+    updateSummary();
+}
+
+// UPDATE ATTENDANCE SUMMARY
+function updateSummary() {
+    const selects = [...document.querySelectorAll(".status")];
+
+    document.getElementById("total").textContent = selects.length;
+
+    document.getElementById("present").textContent =
+        selects.filter(s => s.value === "Present").length;
+
+    document.getElementById("absent").textContent =
+        selects.filter(s => s.value === "Absent").length;
+}
+
+// SAVE ATTENDANCE TO RAILWAY MYSQL DATABASE
+async function saveAttendance() {
+    const date = document.getElementById("attendanceDate").value;
+
+    if (!date) {
+        showMessage("Please select a date.", "red");
+        return;
+    }
+
+    if (!facultyID || !Number.isInteger(Number(facultyID))) {
+        showMessage("Invalid faculty login. Please login again.", "red");
+        return;
+    }
+
+    if (students.length === 0) {
+        showMessage("Please select a class with students.", "red");
+        return;
+    }
+
+    const records = [...document.querySelectorAll(".status")].map(select => ({
+        studentId: Number(select.dataset.id),
+        status: select.value
+    }));
+
+    if (records.length !== students.length) {
+        showMessage("Please load the students again.", "red");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API}/attendance/save`, {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                date: date,
+                facultyId: Number(facultyID),
+                records: records
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Attendance could not be saved."
+            );
         }
+
+        showMessage(
+            data.message || "Attendance saved successfully!",
+            "green"
+        );
+
+    } catch (error) {
+        showMessage(
+            error.message || "Server connection failed.",
+            "red"
+        );
     }
+}
 
-    function showMessage(message, color) {
-        const element = document.getElementById("message");
-        element.textContent = message;
-        element.style.color = color;
-    }
+// DISPLAY MESSAGES
+function showMessage(message, color) {
+    const element = document.getElementById("message");
 
-    document.getElementById("classSelect").addEventListener("change", loadStudents);
+    element.textContent = message;
+    element.style.color = color;
+}
 
-    loadClasses();
+// CLASS CHANGE EVENT
+document.getElementById("classSelect")
+    .addEventListener("change", loadStudents);
+
+// INITIALIZE DASHBOARD
+loadClasses();
+
 </script>
 
 </body>
