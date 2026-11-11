@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 
@@ -7,6 +8,7 @@ const facultyRoutes = require("./facultyRoutes");
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -19,6 +21,14 @@ app.get("/", (req, res) => {
     });
 });
 
+// API status
+app.get("/api/status", (req, res) => {
+    res.json({
+        success: true,
+        message: "Student Attendance API is working!"
+    });
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
     res.json({
@@ -27,11 +37,11 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-// Database check
+// Database connection test
 app.get("/api/db-test", (req, res) => {
     db.query("SELECT 1 AS test", (err, results) => {
         if (err) {
-            console.error("Database test failed:", err);
+            console.error("Database test failed:", err.message);
 
             return res.status(500).json({
                 success: false,
@@ -54,7 +64,7 @@ app.use("/api/students", studentRoutes);
 // Faculty routes
 app.use("/api/faculty", facultyRoutes);
 
-// Handle unknown routes
+// Unknown route handler
 app.use((req, res) => {
     res.status(404).json({
         success: false,
