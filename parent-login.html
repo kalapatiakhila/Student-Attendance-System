@@ -5,7 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parent Login</title>
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background: #f2f4f8;
@@ -19,42 +24,74 @@
         .login-box {
             background: white;
             padding: 30px;
-            width: 320px;
+            width: 90%;
+            max-width: 360px;
             border-radius: 10px;
             box-shadow: 0 3px 12px #0002;
         }
 
         h2 {
             text-align: center;
+            color: #2563eb;
         }
 
         input, button {
             width: 100%;
             padding: 12px;
             margin-top: 15px;
-            box-sizing: border-box;
+            border-radius: 5px;
+        }
+
+        input {
+            border: 1px solid #ccc;
         }
 
         button {
             background: #2563eb;
             color: white;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         #message {
             text-align: center;
             margin-top: 15px;
         }
+
+        .back {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="login-box">
+
     <h2>Parent Login</h2>
 
+    <p style="text-align:center;color:#777;">
+        Student Attendance Management System
+    </p>
+
     <form id="parentLoginForm">
+
         <input
             type="tel"
             id="mobile"
@@ -64,57 +101,117 @@
             required
         >
 
-        <button type="submit">Login</button>
+        <button type="submit" id="loginButton">
+            Login
+        </button>
+
     </form>
 
     <p id="message"></p>
+
+    <p class="back">
+        <a href="index.html">Back to Home</a>
+    </p>
+
 </div>
 
 <script>
-    const API_URL = "http://localhost:5000/api/students";
 
-    document.getElementById("parentLoginForm")
-        .addEventListener("submit", async function(event) {
+const API_URL =
+    "https://student-attendance-system-production-d132.up.railway.app/api/students";
 
-        event.preventDefault();
+document.getElementById("parentLoginForm")
+.addEventListener("submit", async function(event) {
 
-        const mobile = document.getElementById("mobile").value.trim();
-        const message = document.getElementById("message");
+    event.preventDefault();
+
+    const mobile =
+        document.getElementById("mobile").value.trim();
+
+    const message =
+        document.getElementById("message");
+
+    const loginButton =
+        document.getElementById("loginButton");
+
+    if (!/^[0-9]{10}$/.test(mobile)) {
+        message.style.color = "red";
+        message.textContent =
+            "Please enter a valid 10-digit mobile number.";
+        return;
+    }
+
+    loginButton.disabled = true;
+    loginButton.textContent = "Please wait...";
+
+    message.style.color = "#2563eb";
+    message.textContent = "Checking mobile number...";
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/parent-login`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({ mobile })
+            }
+        );
+
+        const text = await response.text();
+
+        let data;
 
         try {
-            const response = await fetch(
-                `${API_URL}/parent-login`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ mobile })
-                }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                message.style.color = "red";
-                message.textContent = data.message || "Login failed";
-                return;
-            }
-
-            sessionStorage.setItem(
-                "parentStudents",
-                JSON.stringify(data.students)
-            );
-
-            sessionStorage.setItem("parentMobile", mobile);
-
-            window.location.href = "parent-dashboard.html";
-
-        } catch (error) {
-            message.style.color = "red";
-            message.textContent = "Cannot connect to server.";
+            data = text ? JSON.parse(text) : {};
+        } catch {
+            throw new Error("Invalid response from server.");
         }
-    });
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Parent login failed."
+            );
+        }
+
+        if (!Array.isArray(data.students) ||
+            data.students.length === 0) {
+
+            throw new Error("No students found for this mobile number.");
+        }
+
+        sessionStorage.setItem(
+            "parentStudents",
+            JSON.stringify(data.students)
+        );
+
+        sessionStorage.setItem(
+            "parentMobile",
+            mobile
+        );
+
+        message.style.color = "green";
+        message.textContent = "Login successful!";
+
+        window.location.href = "parent-dashboard.html";
+
+    } catch (error) {
+
+        console.error("Parent login error:", error);
+
+        message.style.color = "red";
+        message.textContent = error.message;
+
+        loginButton.disabled = false;
+        loginButton.textContent = "Login";
+    }
+
+});
+
 </script>
 
 </body>

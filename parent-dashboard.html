@@ -1,12 +1,15 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Parent Dashboard</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -112,29 +115,45 @@
         }
 
         @media (max-width: 650px) {
+
             .summary {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .container {
+                padding: 12px;
+            }
+
         }
+
     </style>
+
 </head>
 
 <body>
 
 <header>
+
     <h1>Parent Dashboard</h1>
+
     <p>Student Attendance Management System</p>
+
 </header>
 
 <main class="container">
 
     <section class="card">
+
         <h2>Welcome, Parent!</h2>
 
-        <label for="studentSelect">Select Your Child</label>
+        <label for="studentSelect">
+            Select Your Child
+        </label>
 
         <select id="studentSelect">
+
             <option value="">Select Student</option>
+
         </select>
 
         <p id="message" class="message"></p>
@@ -142,14 +161,28 @@
         <button type="button" class="logout" onclick="logout()">
             Logout
         </button>
+
     </section>
 
     <section class="card">
+
         <h2>Student Details</h2>
 
-        <p><strong>Name:</strong> <span id="studentName">-</span></p>
-        <p><strong>Roll Number:</strong> <span id="studentRoll">-</span></p>
-        <p><strong>Class:</strong> <span id="studentClass">-</span></p>
+        <p>
+            <strong>Name:</strong>
+            <span id="studentName">-</span>
+        </p>
+
+        <p>
+            <strong>Roll Number:</strong>
+            <span id="studentRoll">-</span>
+        </p>
+
+        <p>
+            <strong>Class:</strong>
+            <span id="studentClass">-</span>
+        </p>
+
     </section>
 
     <section class="summary">
@@ -177,248 +210,355 @@
     </section>
 
     <section class="card">
+
         <h2>Attendance Status</h2>
-        <h3 id="attendanceStatus">No attendance recorded</h3>
+
+        <h3 id="attendanceStatus">
+            No attendance recorded
+        </h3>
+
     </section>
 
     <section class="card">
+
         <h2>Attendance History</h2>
 
         <div class="table-wrapper">
+
             <table>
+
                 <thead>
+
                     <tr>
                         <th>S.No.</th>
                         <th>Date</th>
                         <th>Status</th>
                     </tr>
+
                 </thead>
 
                 <tbody id="historyBody">
+
                     <tr>
-                        <td colspan="3">Select a student to view attendance.</td>
+                        <td colspan="3">
+                            Select a student to view attendance.
+                        </td>
                     </tr>
+
                 </tbody>
+
             </table>
+
         </div>
+
     </section>
 
 </main>
 
 <script>
-    const ATTENDANCE_API = "http://localhost:5000/api/attendance";
 
-    const studentSelect = document.getElementById("studentSelect");
-    const message = document.getElementById("message");
+// RAILWAY BACKEND API
+const API_URL =
+    "https://student-attendance-system-production-d132.up.railway.app/api";
 
-    let parentStudents = [];
+const ATTENDANCE_API = API_URL + "/attendance";
 
-    // LOAD STUDENTS FROM PARENT LOGIN
-    function loadParentStudents() {
-        try {
-            parentStudents = JSON.parse(
-                sessionStorage.getItem("parentStudents") || "[]"
-            );
+const studentSelect =
+    document.getElementById("studentSelect");
 
-            if (!Array.isArray(parentStudents) ||
-                parentStudents.length === 0) {
+const message =
+    document.getElementById("message");
 
-                window.location.href = "parent-login.html";
-                return;
-            }
+let parentStudents = [];
 
-            studentSelect.innerHTML =
-                '<option value="">Select Student</option>';
+// LOAD STUDENTS FROM PARENT LOGIN
+function loadParentStudents() {
 
-            parentStudents.forEach(student => {
-                const option = document.createElement("option");
+    try {
 
-                option.value = student.id;
-                option.textContent =
-                    student.name + " (" + student.roll_no + ")";
+        parentStudents = JSON.parse(
+            sessionStorage.getItem("parentStudents") || "[]"
+        );
 
-                studentSelect.appendChild(option);
-            });
+        if (!Array.isArray(parentStudents) ||
+            parentStudents.length === 0) {
 
-            message.textContent =
-                "Parent login successful. Select your child.";
-
-        } catch (error) {
-            console.error(error);
             window.location.href = "parent-login.html";
-        }
-    }
-
-    // LOAD ATTENDANCE FROM MYSQL
-    async function loadAttendance(studentId) {
-        try {
-            message.textContent = "Loading attendance...";
-
-            const response = await fetch(
-                ATTENDANCE_API + "/student/" + encodeURIComponent(studentId)
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message || "Unable to load attendance."
-                );
-            }
-
-            const records = Array.isArray(data)
-                ? data
-                : (data.records || data.attendance || []);
-
-            const student = parentStudents.find(
-                item => String(item.id) === String(studentId)
-            );
-
-            if (!student) {
-                throw new Error("Student not found.");
-            }
-
-            document.getElementById("studentName").textContent =
-                student.name || "-";
-
-            document.getElementById("studentRoll").textContent =
-                student.roll_no || "-";
-
-            document.getElementById("studentClass").textContent =
-                student.student_class || "-";
-
-            displayAttendance(records);
-
-            message.textContent = "Attendance loaded successfully.";
-
-        } catch (error) {
-            console.error(error);
-            message.textContent = error.message;
-            clearAttendance();
-        }
-    }
-
-    // DISPLAY ATTENDANCE
-    function displayAttendance(records) {
-        const historyBody = document.getElementById("historyBody");
-
-        let present = 0;
-        let absent = 0;
-
-        records.forEach(record => {
-            const status = String(record.status || "").toLowerCase();
-
-            if (status === "present") present++;
-            if (status === "absent") absent++;
-        });
-
-        const total = present + absent;
-
-        const percentage = total > 0
-            ? (present / total) * 100
-            : 0;
-
-        document.getElementById("totalDays").textContent = total;
-        document.getElementById("presentDays").textContent = present;
-        document.getElementById("absentDays").textContent = absent;
-
-        document.getElementById("percentage").textContent =
-            percentage.toFixed(1) + "%";
-
-        let statusText = "No attendance recorded";
-
-        if (total > 0) {
-            if (percentage < 50) {
-                statusText = "Detention Risk";
-            } else if (percentage < 75) {
-                statusText = "Condonation Required";
-            } else {
-                statusText = "Attendance Eligible";
-            }
-        }
-
-        document.getElementById("attendanceStatus").textContent =
-            statusText;
-
-        historyBody.innerHTML = "";
-
-        if (records.length === 0) {
-            historyBody.innerHTML =
-                '<tr><td colspan="3">No attendance records found.</td></tr>';
             return;
         }
 
-        records.sort((a, b) =>
-            String(b.attendance_date || "").localeCompare(
-                String(a.attendance_date || "")
-            )
+        studentSelect.innerHTML =
+            '<option value="">Select Student</option>';
+
+        parentStudents.forEach(student => {
+
+            const option = document.createElement("option");
+
+            option.value = student.id;
+
+            option.textContent =
+                student.name + " (" + student.roll_no + ")";
+
+            studentSelect.appendChild(option);
+
+        });
+
+        message.textContent =
+            "Parent login successful. Select your child.";
+
+    } catch (error) {
+
+        console.error(error);
+
+        window.location.href = "parent-login.html";
+
+    }
+
+}
+
+// LOAD ATTENDANCE FROM RAILWAY MYSQL
+async function loadAttendance(studentId) {
+
+    try {
+
+        message.textContent = "Loading attendance...";
+
+        const response = await fetch(
+            ATTENDANCE_API +
+            "/student/" +
+            encodeURIComponent(studentId)
         );
 
-        records.forEach((record, index) => {
-            const row = document.createElement("tr");
+        const text = await response.text();
 
-            const date = record.attendance_date
-                ? String(record.attendance_date).slice(0, 10)
-                : "-";
+        let data;
 
-            const values = [
-                index + 1,
-                date,
-                record.status || "-"
-            ];
+        try {
 
-            values.forEach(value => {
-                const cell = document.createElement("td");
-                cell.textContent = value;
-                row.appendChild(cell);
-            });
+            data = text ? JSON.parse(text) : [];
 
-            historyBody.appendChild(row);
-        });
-    }
+        } catch {
 
-    // CLEAR ATTENDANCE DETAILS
-    function clearAttendance() {
-        document.getElementById("studentName").textContent = "-";
-        document.getElementById("studentRoll").textContent = "-";
-        document.getElementById("studentClass").textContent = "-";
+            throw new Error("Invalid response from server.");
 
-        document.getElementById("totalDays").textContent = "0";
-        document.getElementById("presentDays").textContent = "0";
-        document.getElementById("absentDays").textContent = "0";
-        document.getElementById("percentage").textContent = "0%";
+        }
 
-        document.getElementById("attendanceStatus").textContent =
-            "No attendance recorded";
+        if (!response.ok) {
 
-        document.getElementById("historyBody").innerHTML =
-            '<tr><td colspan="3">No attendance records found.</td></tr>';
-    }
+            throw new Error(
+                data.message || "Unable to load attendance."
+            );
 
-    // SELECT STUDENT
-    studentSelect.addEventListener("change", function () {
-        const studentId = this.value;
+        }
+
+        const records = Array.isArray(data)
+            ? data
+            : (data.records || data.attendance || []);
+
+        const student = parentStudents.find(
+            item => String(item.id) === String(studentId)
+        );
+
+        if (!student) {
+
+            throw new Error("Student not found.");
+
+        }
+
+        document.getElementById("studentName").textContent =
+            student.name || "-";
+
+        document.getElementById("studentRoll").textContent =
+            student.roll_no || "-";
+
+        document.getElementById("studentClass").textContent =
+            student.student_class || "-";
+
+        displayAttendance(records);
+
+        message.textContent =
+            "Attendance loaded successfully.";
+
+    } catch (error) {
+
+        console.error("Attendance error:", error);
+
+        message.textContent = error.message;
 
         clearAttendance();
 
-        if (!studentId) {
-            message.textContent = "Please select a student.";
-            return;
-        }
-
-        loadAttendance(studentId);
-    });
-
-    // LOGOUT
-    function logout() {
-        sessionStorage.removeItem("parentStudents");
-        sessionStorage.removeItem("parentMobile");
-        window.location.href = "parent-login.html";
     }
 
-    // INITIALIZE
-    loadParentStudents();
+}
+
+// DISPLAY ATTENDANCE
+function displayAttendance(records) {
+
+    const historyBody =
+        document.getElementById("historyBody");
+
+    let present = 0;
+    let absent = 0;
+
+    records.forEach(record => {
+
+        const status =
+            String(record.status || "").toLowerCase();
+
+        if (status === "present") present++;
+
+        if (status === "absent") absent++;
+
+    });
+
+    const total = present + absent;
+
+    const percentage = total > 0
+        ? (present / total) * 100
+        : 0;
+
+    document.getElementById("totalDays").textContent =
+        total;
+
+    document.getElementById("presentDays").textContent =
+        present;
+
+    document.getElementById("absentDays").textContent =
+        absent;
+
+    document.getElementById("percentage").textContent =
+        percentage.toFixed(1) + "%";
+
+    let statusText = "No attendance recorded";
+
+    if (total > 0) {
+
+        if (percentage < 50) {
+
+            statusText = "Detention Risk";
+
+        } else if (percentage < 75) {
+
+            statusText = "Condonation Required";
+
+        } else {
+
+            statusText = "Attendance Eligible";
+
+        }
+
+    }
+
+    document.getElementById("attendanceStatus").textContent =
+        statusText;
+
+    historyBody.innerHTML = "";
+
+    if (records.length === 0) {
+
+        historyBody.innerHTML =
+            '<tr><td colspan="3">No attendance records found.</td></tr>';
+
+        return;
+
+    }
+
+    records.sort((a, b) =>
+        String(b.attendance_date || "").localeCompare(
+            String(a.attendance_date || "")
+        )
+    );
+
+    records.forEach((record, index) => {
+
+        const row = document.createElement("tr");
+
+        const date = record.attendance_date
+            ? String(record.attendance_date).slice(0, 10)
+            : "-";
+
+        const values = [
+            index + 1,
+            date,
+            record.status || "-"
+        ];
+
+        values.forEach(value => {
+
+            const cell = document.createElement("td");
+
+            cell.textContent = value;
+
+            row.appendChild(cell);
+
+        });
+
+        historyBody.appendChild(row);
+
+    });
+
+}
+
+// CLEAR ATTENDANCE DETAILS
+function clearAttendance() {
+
+    document.getElementById("studentName").textContent = "-";
+
+    document.getElementById("studentRoll").textContent = "-";
+
+    document.getElementById("studentClass").textContent = "-";
+
+    document.getElementById("totalDays").textContent = "0";
+
+    document.getElementById("presentDays").textContent = "0";
+
+    document.getElementById("absentDays").textContent = "0";
+
+    document.getElementById("percentage").textContent = "0%";
+
+    document.getElementById("attendanceStatus").textContent =
+        "No attendance recorded";
+
+    document.getElementById("historyBody").innerHTML =
+        '<tr><td colspan="3">No attendance records found.</td></tr>';
+
+}
+
+// SELECT STUDENT
+studentSelect.addEventListener("change", function() {
+
+    const studentId = this.value;
+
+    clearAttendance();
+
+    if (!studentId) {
+
+        message.textContent = "Please select a student.";
+
+        return;
+
+    }
+
+    loadAttendance(studentId);
+
+});
+
+// LOGOUT
+function logout() {
+
+    sessionStorage.removeItem("parentStudents");
+
+    sessionStorage.removeItem("parentMobile");
+
+    window.location.href = "parent-login.html";
+
+}
+
+// INITIALIZE
+loadParentStudents();
+
 </script>
 
 </body>
+
 </html>
