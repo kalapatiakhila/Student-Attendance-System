@@ -196,13 +196,13 @@
 
 // RAILWAY BACKEND API URLS
 const API_URL =
-    "https://student-attendance-system-production-7258.up.railway.app/api/students";
+    "https://student-attendance-system-production-d132.up.railway.app/api/students";
 
 const FACULTY_API_URL =
-    "https://student-attendance-system-production-7258.up.railway.app/api/faculty";
+    "https://student-attendance-system-production-d132.up.railway.app/api/faculty";
 
 const ATTENDANCE_API_URL =
-    "https://student-attendance-system-production-7258.up.railway.app/api/attendance";
+    "https://student-attendance-system-production-d132.up.railway.app/api/attendance";
 
 let students = [];
 let faculty = [];
@@ -213,7 +213,6 @@ const facultyList = document.getElementById("facultyList");
 
 // READ SERVER RESPONSE
 async function readResponse(response) {
-
     const text = await response.text();
 
     if (!text) {
@@ -229,62 +228,58 @@ async function readResponse(response) {
 
 // SHOW MESSAGE
 function showMessage(message) {
-    document.getElementById("message").textContent = message;
+    const messageElement = document.getElementById("message");
+    if (messageElement) {
+        messageElement.textContent = message;
+    }
 }
 
 // ADD STUDENT
-studentForm.addEventListener("submit", async function(event) {
+if (studentForm) {
+    studentForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
 
-    event.preventDefault();
+        const rollNo = document.getElementById("rollNo").value.trim();
+        const name = document.getElementById("studentName").value.trim();
+        const studentClass = document.getElementById("studentClass").value.trim();
+        const mobileNo = document.getElementById("mobileNo").value.trim();
 
-    const rollNo = document.getElementById("rollNo").value.trim();
-    const name = document.getElementById("studentName").value.trim();
-    const studentClass = document.getElementById("studentClass").value.trim();
-    const mobileNo = document.getElementById("mobileNo").value.trim();
-
-    if (!/^[0-9]{10}$/.test(mobileNo)) {
-        alert("Enter a valid 10-digit mobile number.");
-        return;
-    }
-
-    try {
-
-        const response = await fetch(API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                rollNo,
-                name,
-                studentClass,
-                mobileNo
-            })
-        });
-
-        const result = await readResponse(response);
-
-        if (!response.ok) {
-            throw new Error(result.message || "Failed to add student.");
+        if (!/^[0-9]{10}$/.test(mobileNo)) {
+            alert("Enter a valid 10-digit mobile number.");
+            return;
         }
 
-        alert(result.message || "Student added successfully!");
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    rollNo,
+                    name,
+                    studentClass,
+                    mobileNo
+                })
+            });
 
-        studentForm.reset();
+            const result = await readResponse(response);
 
-        await loadStudents();
+            if (!response.ok) {
+                throw new Error(result.message || "Failed to add student.");
+            }
 
-    } catch (error) {
-        alert(error.message);
-    }
+            alert(result.message || "Student added successfully!");
+            studentForm.reset();
+            await loadStudents();
 
-});
+        } catch (error) {
+            alert("Student error: " + error.message);
+        }
+    });
+}
 
 // LOAD STUDENTS
 async function loadStudents() {
-
     try {
-
         const response = await fetch(API_URL);
         const data = await readResponse(response);
 
@@ -307,25 +302,25 @@ async function loadStudents() {
         displayStudents();
 
     } catch (error) {
-
         console.error("Student loading error:", error);
 
-        studentList.innerHTML =
-            '<tr><td colspan="5">Unable to load students.</td></tr>';
+        if (studentList) {
+            studentList.innerHTML =
+                '<tr><td colspan="5">Unable to load students.</td></tr>';
+        }
 
         showMessage(error.message);
-
     }
-
 }
 
 // DISPLAY STUDENTS
 function displayStudents() {
+    if (!studentList) return;
 
-    const searchValue = document
-        .getElementById("search")
-        .value.trim()
-        .toLowerCase();
+    const searchElement = document.getElementById("search");
+    const searchValue = searchElement
+        ? searchElement.value.trim().toLowerCase()
+        : "";
 
     const filtered = students.filter(student =>
         String(student.rollNo).toLowerCase().includes(searchValue)
@@ -333,18 +328,16 @@ function displayStudents() {
 
     studentList.innerHTML = "";
 
-    document.getElementById("totalStudents").textContent = students.length;
+    const totalElement = document.getElementById("totalStudents");
+    if (totalElement) totalElement.textContent = students.length;
 
     if (filtered.length === 0) {
-
         studentList.innerHTML =
             '<tr><td colspan="5">No students found.</td></tr>';
-
         return;
     }
 
     filtered.forEach(student => {
-
         const row = document.createElement("tr");
 
         [
@@ -353,11 +346,9 @@ function displayStudents() {
             student.studentClass,
             student.mobileNo || "Not available"
         ].forEach(value => {
-
             const cell = document.createElement("td");
             cell.textContent = value;
             row.appendChild(cell);
-
         });
 
         const actions = document.createElement("td");
@@ -374,33 +365,20 @@ function displayStudents() {
         deleteButton.onclick = () => deleteStudent(student);
 
         actions.append(editButton, deleteButton);
-
         row.appendChild(actions);
         studentList.appendChild(row);
-
     });
-
 }
 
 // EDIT STUDENT
 async function editStudent(student) {
-
     const newName = prompt("Enter student name:", student.name);
-
     if (newName === null || !newName.trim()) return;
 
-    const newClass = prompt(
-        "Enter class / section:",
-        student.studentClass
-    );
-
+    const newClass = prompt("Enter class / section:", student.studentClass);
     if (newClass === null || !newClass.trim()) return;
 
-    const newMobile = prompt(
-        "Enter parent's mobile number:",
-        student.mobileNo
-    );
-
+    const newMobile = prompt("Enter parent's mobile number:", student.mobileNo);
     if (newMobile === null) return;
 
     if (!/^[0-9]{10}$/.test(newMobile.trim())) {
@@ -409,12 +387,9 @@ async function editStudent(student) {
     }
 
     try {
-
         const response = await fetch(`${API_URL}/${student.id}`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name: newName.trim(),
                 studentClass: newClass.trim(),
@@ -429,26 +404,20 @@ async function editStudent(student) {
         }
 
         alert(result.message || "Student updated successfully!");
-
         await loadStudents();
 
     } catch (error) {
         alert(error.message);
     }
-
 }
 
 // DELETE STUDENT
 async function deleteStudent(student) {
-
-    const confirmed = confirm(
-        `Are you sure you want to delete ${student.name}?`
-    );
-
-    if (!confirmed) return;
+    if (!confirm(`Are you sure you want to delete ${student.name}?`)) {
+        return;
+    }
 
     try {
-
         const response = await fetch(`${API_URL}/${student.id}`, {
             method: "DELETE"
         });
@@ -460,20 +429,16 @@ async function deleteStudent(student) {
         }
 
         alert(result.message || "Student deleted successfully!");
-
         await loadStudents();
 
     } catch (error) {
         alert(error.message);
     }
-
 }
 
 // LOAD FACULTY
 async function loadFaculty() {
-
     try {
-
         const response = await fetch(FACULTY_API_URL);
         const data = await readResponse(response);
 
@@ -486,29 +451,28 @@ async function loadFaculty() {
         }
 
         faculty = data;
-
         displayFaculty();
 
     } catch (error) {
-
         console.error("Faculty loading error:", error);
 
-        facultyList.innerHTML =
-            '<tr><td colspan="6">Unable to load faculty.</td></tr>';
+        if (facultyList) {
+            facultyList.innerHTML =
+                '<tr><td colspan="6">Unable to load faculty.</td></tr>';
+        }
 
         showMessage(error.message);
-
     }
-
 }
 
 // DISPLAY FACULTY
 function displayFaculty() {
+    if (!facultyList) return;
 
-    const searchValue = document
-        .getElementById("facultySearch")
-        .value.trim()
-        .toLowerCase();
+    const searchElement = document.getElementById("facultySearch");
+    const searchValue = searchElement
+        ? searchElement.value.trim().toLowerCase()
+        : "";
 
     const filtered = faculty.filter(person =>
         String(person.id).toLowerCase().includes(searchValue)
@@ -516,18 +480,16 @@ function displayFaculty() {
 
     facultyList.innerHTML = "";
 
-    document.getElementById("totalFaculty").textContent = faculty.length;
+    const totalElement = document.getElementById("totalFaculty");
+    if (totalElement) totalElement.textContent = faculty.length;
 
     if (filtered.length === 0) {
-
         facultyList.innerHTML =
             '<tr><td colspan="6">No faculty found.</td></tr>';
-
         return;
     }
 
     filtered.forEach(person => {
-
         const row = document.createElement("tr");
 
         [
@@ -537,11 +499,9 @@ function displayFaculty() {
             person.email,
             person.mobile
         ].forEach(value => {
-
             const cell = document.createElement("td");
             cell.textContent = value || "Not available";
             row.appendChild(cell);
-
         });
 
         const actions = document.createElement("td");
@@ -554,28 +514,20 @@ function displayFaculty() {
 
         actions.appendChild(deleteButton);
         row.appendChild(actions);
-
         facultyList.appendChild(row);
-
     });
-
 }
 
 // DELETE FACULTY
 async function deleteFaculty(person) {
-
-    const confirmed = confirm(
-        `Are you sure you want to delete faculty ${person.name}?`
-    );
-
-    if (!confirmed) return;
+    if (!confirm(`Are you sure you want to delete faculty ${person.name}?`)) {
+        return;
+    }
 
     try {
-
-        const response = await fetch(
-            `${FACULTY_API_URL}/${person.id}`,
-            { method: "DELETE" }
-        );
+        const response = await fetch(`${FACULTY_API_URL}/${person.id}`, {
+            method: "DELETE"
+        });
 
         const result = await readResponse(response);
 
@@ -584,18 +536,15 @@ async function deleteFaculty(person) {
         }
 
         alert(result.message || "Faculty deleted successfully.");
-
         await loadFaculty();
 
     } catch (error) {
         alert(error.message);
     }
-
 }
 
 // LOAD TODAY'S ATTENDANCE COUNTS
 async function updateAttendanceCounts() {
-
     const today = new Date();
 
     const date =
@@ -604,7 +553,6 @@ async function updateAttendanceCounts() {
         String(today.getDate()).padStart(2, "0");
 
     try {
-
         const response = await fetch(
             `${ATTENDANCE_API_URL}/summary/today?date=${date}`
         );
@@ -615,33 +563,33 @@ async function updateAttendanceCounts() {
             throw new Error(data.message || "Unable to load attendance.");
         }
 
-        document.getElementById("presentStudents").textContent =
-            data.present || 0;
+        const presentElement = document.getElementById("presentStudents");
+        const absentElement = document.getElementById("absentStudents");
 
-        document.getElementById("absentStudents").textContent =
-            data.absent || 0;
+        if (presentElement) presentElement.textContent = data.present || 0;
+        if (absentElement) absentElement.textContent = data.absent || 0;
 
     } catch (error) {
-
         console.error("Attendance summary error:", error);
 
-        document.getElementById("presentStudents").textContent = "--";
-        document.getElementById("absentStudents").textContent = "--";
+        const presentElement = document.getElementById("presentStudents");
+        const absentElement = document.getElementById("absentStudents");
 
+        if (presentElement) presentElement.textContent = "--";
+        if (absentElement) absentElement.textContent = "--";
     }
-
 }
 
 // SEARCH
-document.getElementById("search").addEventListener(
-    "input",
-    displayStudents
-);
+const searchInput = document.getElementById("search");
+if (searchInput) {
+    searchInput.addEventListener("input", displayStudents);
+}
 
-document.getElementById("facultySearch").addEventListener(
-    "input",
-    displayFaculty
-);
+const facultySearchInput = document.getElementById("facultySearch");
+if (facultySearchInput) {
+    facultySearchInput.addEventListener("input", displayFaculty);
+}
 
 // LOGOUT
 function logout() {
@@ -650,13 +598,11 @@ function logout() {
 
 // INITIAL LOAD
 async function initializeDashboard() {
-
     await Promise.all([
         loadStudents(),
         loadFaculty(),
         updateAttendanceCounts()
     ]);
-
 }
 
 initializeDashboard();
