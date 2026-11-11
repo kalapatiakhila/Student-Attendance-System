@@ -1,0 +1,11 @@
+{
+  "name": "student-attendance-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node frontend-server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
