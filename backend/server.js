@@ -5,6 +5,7 @@ const cors = require("cors");
 const db = require("./db");
 const studentRoutes = require("./studentRoutes");
 const facultyRoutes = require("./facultyRoutes");
+const attendanceRoutes = require("./attendanceRoutes");
 
 const app = express();
 
@@ -63,6 +64,9 @@ app.use("/api/students", studentRoutes);
 
 // Faculty routes
 app.use("/api/faculty", facultyRoutes);
+
+// Attendance routes
+app.use("/api/attendance", attendanceRoutes);
 
 // Unknown route handler
 app.use((req, res) => {
