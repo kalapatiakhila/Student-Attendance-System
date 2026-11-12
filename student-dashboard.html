@@ -30,7 +30,7 @@
         }
 
         main {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 30px auto;
             padding: 0 15px;
         }
@@ -65,10 +65,37 @@
             background: #c0392b;
         }
 
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-box {
+            background: #e9efff;
+            padding: 18px;
+            border-radius: 8px;
+        }
+
+        .summary-box p {
+            margin: 5px 0;
+        }
+
+        .summary-box strong {
+            font-size: 23px;
+            color: #243b64;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
+            min-width: 550px;
         }
 
         th, td {
@@ -102,16 +129,13 @@
         }
 
         @media (max-width: 600px) {
-            table {
-                font-size: 13px;
+            .card {
+                padding: 15px;
             }
 
             th, td {
                 padding: 8px;
-            }
-
-            .card {
-                padding: 15px;
+                font-size: 13px;
             }
         }
     </style>
@@ -149,43 +173,59 @@
     <section class="card">
         <h2>Attendance Summary</h2>
 
-        <p><strong>Total Classes:</strong>
-            <span id="totalClasses">--</span>
-        </p>
+        <div class="summary">
 
-        <p><strong>Present:</strong>
-            <span id="presentDays">--</span>
-        </p>
+            <div class="summary-box">
+                <p>Total Periods</p>
+                <strong id="totalClasses">0</strong>
+            </div>
 
-        <p><strong>Absent:</strong>
-            <span id="absentDays">--</span>
-        </p>
+            <div class="summary-box">
+                <p>Present Periods</p>
+                <strong id="presentDays">0</strong>
+            </div>
 
-        <p><strong>Attendance Percentage:</strong>
-            <span id="percentage">--</span>
-        </p>
+            <div class="summary-box">
+                <p>Absent Periods</p>
+                <strong id="absentDays">0</strong>
+            </div>
+
+            <div class="summary-box">
+                <p>Attendance Percentage</p>
+                <strong id="percentage">0%</strong>
+            </div>
+
+        </div>
     </section>
 
     <!-- ATTENDANCE HISTORY -->
     <section class="card">
-        <h2>Attendance History</h2>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
+        <h2>Period-wise Attendance History</h2>
 
-            <tbody id="attendanceTable">
-                <tr>
-                    <td colspan="2">Loading attendance...</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Period</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="attendanceTable">
+                    <tr>
+                        <td colspan="4">Loading attendance...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
 
         <p id="message" class="message"></p>
+
     </section>
 
 </main>
@@ -196,9 +236,11 @@
     const API_URL =
         "https://student-attendance-system-production-d132.up.railway.app/api";
 
+
     // STUDENT LOGIN DETAILS
     const studentRoll = sessionStorage.getItem("studentRoll");
     const studentToken = sessionStorage.getItem("studentToken");
+
 
     // LOGOUT
     function logout() {
@@ -209,6 +251,7 @@
 
         window.location.href = "student-login.html";
     }
+
 
     // READ API RESPONSE
     async function readResponse(response) {
@@ -236,6 +279,7 @@
         return data;
     }
 
+
     // SHOW MESSAGE
     function showMessage(text, isError = false) {
 
@@ -247,6 +291,7 @@
             ? "message error"
             : "message";
     }
+
 
     // FORMAT ATTENDANCE DATE
     function formatDate(value) {
@@ -266,6 +311,7 @@
         return dateString;
     }
 
+
     // LOAD STUDENT DASHBOARD
     async function loadDashboard() {
 
@@ -282,7 +328,7 @@
 
         try {
 
-            // GET STUDENTS FROM RAILWAY
+            // GET STUDENTS FROM DATABASE
             const response = await fetch(`${API_URL}/students`);
 
             const data = await readResponse(response);
@@ -295,7 +341,8 @@
                 throw new Error("Invalid student data received.");
             }
 
-            // FIND LOGGED-IN STUDENT USING ROLL NUMBER
+
+            // FIND LOGGED-IN STUDENT
             const student = students.find(item =>
                 String(item.roll_no).trim().toLowerCase() ===
                 String(studentRoll).trim().toLowerCase()
@@ -304,6 +351,7 @@
             if (!student) {
                 throw new Error("Student record not found.");
             }
+
 
             // DISPLAY STUDENT DETAILS
             document.getElementById("studentName").textContent =
@@ -314,6 +362,7 @@
 
             document.getElementById("studentClass").textContent =
                 student.student_class || "";
+
 
             // LOAD ATTENDANCE
             await loadAttendance(student.id);
@@ -326,7 +375,8 @@
         }
     }
 
-    // LOAD ATTENDANCE HISTORY
+
+    // LOAD PERIOD-WISE ATTENDANCE
     async function loadAttendance(studentId) {
 
         const table = document.getElementById("attendanceTable");
@@ -339,10 +389,10 @@
 
             const data = await readResponse(response);
 
-            // YOUR BACKEND RETURNS A DIRECT ARRAY
             const records = Array.isArray(data)
                 ? data
                 : (Array.isArray(data.records) ? data.records : []);
+
 
             // CALCULATE ATTENDANCE
             const present = records.filter(record =>
@@ -359,6 +409,7 @@
                 ? ((present / total) * 100).toFixed(2)
                 : "0.00";
 
+
             // DISPLAY SUMMARY
             document.getElementById("totalClasses").textContent = total;
 
@@ -369,6 +420,7 @@
             document.getElementById("percentage").textContent =
                 percentage + "%";
 
+
             // CLEAR OLD TABLE
             table.innerHTML = "";
 
@@ -376,7 +428,7 @@
 
                 table.innerHTML = `
                     <tr>
-                        <td colspan="2">
+                        <td colspan="4">
                             No attendance records found.
                         </td>
                     </tr>
@@ -387,20 +439,35 @@
                 return;
             }
 
-            // DISPLAY ATTENDANCE RECORDS
+
+            // DISPLAY PERIOD-WISE ATTENDANCE
             records.forEach(record => {
 
                 const row = document.createElement("tr");
 
                 const dateCell = document.createElement("td");
-
+                const periodCell = document.createElement("td");
+                const subjectCell = document.createElement("td");
                 const statusCell = document.createElement("td");
+
 
                 dateCell.textContent =
                     formatDate(record.attendance_date);
 
+
+                periodCell.textContent =
+                    record.period_number
+                        ? "Period " + record.period_number
+                        : "Not recorded";
+
+
+                subjectCell.textContent =
+                    record.subject || "Not recorded";
+
+
                 statusCell.textContent =
                     record.status || "Unknown";
+
 
                 const status = String(record.status).toLowerCase();
 
@@ -410,12 +477,16 @@
                     statusCell.className = "absent";
                 }
 
-                row.appendChild(dateCell);
 
+                row.appendChild(dateCell);
+                row.appendChild(periodCell);
+                row.appendChild(subjectCell);
                 row.appendChild(statusCell);
 
                 table.appendChild(row);
+
             });
+
 
             showMessage("Attendance loaded successfully!");
 
@@ -425,7 +496,7 @@
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="2">
+                    <td colspan="4">
                         Attendance history is not available.
                     </td>
                 </tr>
@@ -434,6 +505,7 @@
             showMessage(error.message, true);
         }
     }
+
 
     // START DASHBOARD
     loadDashboard();
