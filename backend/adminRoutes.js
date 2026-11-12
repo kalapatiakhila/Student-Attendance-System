@@ -26,12 +26,16 @@ router.post("/login", (req, res) => {
 
     db.query(sql, [username], async (err, results) => {
         if (err) {
-            console.error(err);
+            console.error("ADMIN DATABASE ERROR:", err);
             return res.status(500).json({
                 success: false,
                 message: "Database error"
             });
         }
+
+        console.log("ADMIN LOGIN REQUEST");
+        console.log("Username searched:", username);
+        console.log("Admin found:", results.length > 0);
 
         if (results.length === 0) {
             return res.status(401).json({
@@ -42,16 +46,30 @@ router.post("/login", (req, res) => {
 
         const admin = results[0];
 
+        console.log("Username found:", admin.username);
+        console.log("Role:", admin.role);
+        console.log("Stored hash length:", admin.password_hash.length);
+
         try {
             const validPassword = await bcrypt.compare(
                 password,
                 admin.password_hash
             );
 
+            console.log("Password match:", validPassword);
+
             if (!validPassword) {
                 return res.status(401).json({
                     success: false,
                     message: "Invalid username or password"
+                });
+            }
+
+            if (!process.env.JWT_SECRET) {
+                console.error("JWT_SECRET is missing");
+                return res.status(500).json({
+                    success: false,
+                    message: "Server authentication configuration error"
                 });
             }
 
@@ -65,7 +83,7 @@ router.post("/login", (req, res) => {
                 { expiresIn: "8h" }
             );
 
-            res.json({
+            return res.json({
                 success: true,
                 message: "Admin login successful",
                 token,
@@ -75,9 +93,11 @@ router.post("/login", (req, res) => {
                     role: admin.role
                 }
             });
+
         } catch (error) {
-            console.error(error);
-            res.status(500).json({
+            console.error("ADMIN LOGIN ERROR:", error);
+
+            return res.status(500).json({
                 success: false,
                 message: "Login failed"
             });
