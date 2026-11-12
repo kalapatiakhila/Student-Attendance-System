@@ -1,8 +1,53 @@
 
 const express = require("express");
 const db = require("./db");
+const jwt = require("jsonwebtoken");
 
 const router = express.Router();
+
+// ======================================
+// ADMIN AUTHENTICATION
+// ======================================
+function verifyAdmin(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            success: false,
+            message: "Admin authentication required."
+        });
+    }
+
+    if (!process.env.JWT_SECRET) {
+        return res.status(500).json({
+            success: false,
+            message: "Server authentication configuration error."
+        });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.role !== "admin") {
+            return res.status(403).json({
+                success: false,
+                message: "Only Admin can edit attendance."
+            });
+        }
+
+        req.admin = decoded;
+        next();
+
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired Admin token."
+        });
+    }
+}
+
 
 // ======================================
 // 1. GET ATTENDANCE SUMMARY FOR A DATE
@@ -28,6 +73,7 @@ router.get("/summary/today", (req, res) => {
     db.query(sql, [date], (err, results) => {
         if (err) {
             console.error("Summary error:", err);
+
             return res.status(500).json({
                 success: false,
                 message: "Could not load attendance summary."
@@ -69,6 +115,7 @@ router.get("/student/:studentId", (req, res) => {
     db.query(sql, [req.params.studentId], (err, results) => {
         if (err) {
             console.error("Student attendance error:", err);
+
             return res.status(500).json({
                 success: false,
                 message: "Could not load student attendance."
@@ -96,6 +143,7 @@ router.get("/percentage/:studentId", (req, res) => {
     db.query(sql, [req.params.studentId], (err, results) => {
         if (err) {
             console.error("Percentage error:", err);
+
             return res.status(500).json({
                 success: false,
                 message: "Could not calculate attendance percentage."
@@ -116,7 +164,6 @@ router.get("/percentage/:studentId", (req, res) => {
             absentPeriods,
             percentage: Number(percentage.toFixed(2)),
 
-            // Old field names retained for compatibility
             totalDays: totalPeriods,
             presentDays: presentPeriods,
             absentDays: absentPeriods
@@ -150,6 +197,7 @@ router.get("/class/:className", (req, res) => {
     db.query(sql, [req.params.className], (err, results) => {
         if (err) {
             console.error("Class attendance error:", err);
+
             return res.status(500).json({
                 success: false,
                 message: "Could not load class attendance."
@@ -186,6 +234,7 @@ router.get("/search/:rollNo", (req, res) => {
     db.query(sql, [req.params.rollNo], (err, results) => {
         if (err) {
             console.error("Roll number search error:", err);
+
             return res.status(500).json({
                 success: false,
                 message: "Could not search attendance."
@@ -208,7 +257,13 @@ router.get("/search/:rollNo", (req, res) => {
 // 6. SAVE PERIOD-WISE ATTENDANCE
 // ======================================
 router.post("/save", (req, res) => {
-    const { date, facultyId, periodNumber, subject, records } = req.body;
+    const {
+        date,
+        facultyId,
+        periodNumber,
+        subject,
+        records
+    } = req.body;
 
     if (
         !date ||
@@ -227,7 +282,9 @@ router.post("/save", (req, res) => {
         });
     }
 
-    const studentIds = records.map(record => Number(record.studentId));
+    const studentIds = records.map(record =>
+        Number(record.studentId)
+    );
 
     if (
         records.some(record =>
@@ -248,6 +305,7 @@ router.post("/save", (req, res) => {
     db.query(checkFaculty, [facultyId], (err, facultyResults) => {
         if (err) {
             console.error("Faculty check error:", err);
+
             return res.status(500).json({
                 success: false,
                 message: "Could not verify faculty."
@@ -261,11 +319,10 @@ router.post("/save", (req, res) => {
             });
         }
 
-        // Use a transaction so a failed save does not leave
-        // only some students' attendance saved.
         db.beginTransaction(err => {
             if (err) {
                 console.error("Transaction error:", err);
+
                 return res.status(500).json({
                     success: false,
                     message: "Could not start attendance saving."
@@ -280,6 +337,7 @@ router.post("/save", (req, res) => {
                         if (err) {
                             return db.rollback(() => {
                                 console.error("Commit error:", err);
+
                                 res.status(500).json({
                                     success: false,
                                     message: "Could not finish saving attendance."
@@ -330,6 +388,7 @@ router.post("/save", (req, res) => {
                         if (err) {
                             return db.rollback(() => {
                                 console.error("Attendance save error:", err);
+
                                 res.status(500).json({
                                     success: false,
                                     message: "Could not save attendance. No partial changes were committed."
@@ -347,5 +406,66 @@ router.post("/save", (req, res) => {
         });
     });
 });
+
+
+// ======================================
+// 7. ADMIN EDIT EXISTING ATTENDANCE
+// ======================================
+router.put(
+    "/admin/edit/:attendanceId",
+    verifyAdmin,
+    (req, res) => {
+        const attendanceId = Number(req.params.attendanceId);
+        const { status } = req.body;
+
+        if (
+            !Number.isInteger(attendanceId) ||
+            attendanceId <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid attendance ID."
+            });
+        }
+
+        if (!["Present", "Absent"].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Status must be Present or Absent."
+            });
+        }
+
+        const sql = `
+            UPDATE attendance
+            SET status = ?
+            WHERE id = ?
+        `;
+
+        db.query(sql, [status, attendanceId], (err, result) => {
+            if (err) {
+                console.error("Admin attendance edit error:", err);
+
+                return res.status(500).json({
+                    success: false,
+                    message: "Could not update attendance."
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Attendance record not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Attendance updated successfully!",
+                attendanceId,
+                status
+            });
+        });
+    }
+);
 
 module.exports = router;

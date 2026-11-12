@@ -42,6 +42,11 @@
             font-size: 14px;
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .logout {
             background: #e74c3c;
             color: white;
@@ -98,11 +103,12 @@
             gap: 12px;
         }
 
-        input {
+        input, select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ccd2df;
             border-radius: 5px;
+            background: white;
         }
 
         .add-btn {
@@ -115,6 +121,26 @@
             background: #168b66;
             color: white;
             margin-bottom: 12px;
+        }
+
+        .search-btn {
+            background: #263b80;
+            color: white;
+        }
+
+        .edit-btn {
+            background: #e09b22;
+            color: white;
+        }
+
+        .save-btn {
+            background: #168b66;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #777;
+            color: white;
         }
 
         .table-wrap {
@@ -142,7 +168,7 @@
             color: white;
         }
 
-        #message {
+        #message, #attendanceMessage {
             margin-bottom: 15px;
             font-weight: bold;
         }
@@ -155,10 +181,33 @@
             color: #168044;
         }
 
-        footer {
+        .hint {
+            color: #667085;
+            font-size: 13px;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .status-present {
+            color: #168044;
+            font-weight: bold;
+        }
+
+        .status-absent {
+            color: #d63031;
+            font-weight: bold;
+        }
+
+        .footer {
             text-align: center;
             padding: 20px;
             color: #777;
+        }
+
+        @media(max-width: 600px) {
+            .section {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -207,6 +256,106 @@
 
     </div>
 
+
+    <!-- ADMIN ATTENDANCE EDITING -->
+
+    <div class="section">
+
+        <h2>Manage Student Attendance</h2>
+
+        <p class="hint">
+            Admin can correct an existing attendance record.
+            Select a class, date and period, or search using a student roll number.
+        </p>
+
+        <br>
+
+        <div id="attendanceMessage"></div>
+
+        <div class="form-grid">
+
+            <select id="attendanceClass">
+                <option value="">Select Class</option>
+            </select>
+
+            <input
+                type="date"
+                id="attendanceDate"
+            >
+
+            <select id="attendancePeriod">
+                <option value="">All Periods</option>
+                <option value="1">Period 1</option>
+                <option value="2">Period 2</option>
+                <option value="3">Period 3</option>
+                <option value="4">Period 4</option>
+                <option value="5">Period 5</option>
+                <option value="6">Period 6</option>
+            </select>
+
+            <input
+                type="text"
+                id="searchRollNo"
+                placeholder="Search by Roll Number"
+            >
+
+            <button
+                type="button"
+                class="search-btn"
+                onclick="loadAttendance()"
+            >
+                Search Attendance
+            </button>
+
+        </div>
+
+        <p class="hint">
+            Choose a class or enter a roll number.
+            Select a date and period to narrow the results.
+        </p>
+
+        <br>
+
+        <button
+            type="button"
+            class="refresh-btn"
+            onclick="resetAttendanceFilters()"
+        >
+            Reset Filters
+        </button>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Roll Number</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                        <th>Date</th>
+                        <th>Period</th>
+                        <th>Subject</th>
+                        <th>Attendance Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="attendanceTable">
+                    <tr>
+                        <td colspan="8">
+                            Select a class or search by roll number.
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
     <!-- ADD STUDENT -->
 
     <div class="section">
@@ -239,6 +388,7 @@
         </form>
 
     </div>
+
 
     <!-- STUDENT DETAILS -->
 
@@ -278,6 +428,7 @@
 
     </div>
 
+
     <!-- ADD FACULTY -->
 
     <div class="section">
@@ -312,6 +463,7 @@
         </form>
 
     </div>
+
 
     <!-- FACULTY DETAILS -->
 
@@ -352,28 +504,44 @@
 
 </div>
 
-<footer>
+<footer class="footer">
     Student Attendance Management System
 </footer>
 
+
 <script>
 
-    // CORRECT RAILWAY BACKEND URL
-    // Do not declare API_URL a second time.
+    // =====================================
+    // BACKEND API URL
+    // =====================================
 
     const API_URL =
         "https://student-attendance-system-production-d132.up.railway.app";
 
     const messageBox = document.getElementById("message");
+    const attendanceMessage =
+        document.getElementById("attendanceMessage");
 
-    // DISPLAY MESSAGE
 
-    function showMessage(message, type = "error") {
-        messageBox.textContent = message;
-        messageBox.className = type;
+    // =====================================
+    // ADMIN TOKEN
+    // =====================================
+
+    function getAdminToken() {
+
+        return (
+            sessionStorage.getItem("adminToken") ||
+            sessionStorage.getItem("token") ||
+            localStorage.getItem("adminToken") ||
+            localStorage.getItem("token") ||
+            ""
+        );
     }
 
+
+    // =====================================
     // COMMON API FUNCTION
+    // =====================================
 
     async function apiRequest(endpoint, options = {}) {
 
@@ -408,7 +576,49 @@
         return data;
     }
 
+
+    // =====================================
+    // ADMIN AUTHENTICATED API FUNCTION
+    // =====================================
+
+    async function adminApiRequest(endpoint, options = {}) {
+
+        const token = getAdminToken();
+
+        if (!token) {
+            throw new Error(
+                "Admin token not found. Please login again."
+            );
+        }
+
+        return apiRequest(endpoint, {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                "Authorization": "Bearer " + token
+            }
+        });
+    }
+
+
+    // =====================================
+    // DISPLAY MESSAGE
+    // =====================================
+
+    function showMessage(message, type = "error") {
+        messageBox.textContent = message;
+        messageBox.className = type;
+    }
+
+    function showAttendanceMessage(message, type = "error") {
+        attendanceMessage.textContent = message;
+        attendanceMessage.className = type;
+    }
+
+
+    // =====================================
     // LOAD STUDENTS
+    // =====================================
 
     async function loadStudents() {
 
@@ -454,9 +664,7 @@
                 values.forEach(value => {
 
                     const cell = document.createElement("td");
-
                     cell.textContent = value ?? "-";
-
                     row.appendChild(cell);
 
                 });
@@ -472,12 +680,12 @@
                     deleteStudent(student.id);
 
                 actionCell.appendChild(deleteButton);
-
                 row.appendChild(actionCell);
-
                 table.appendChild(row);
 
             });
+
+            loadClassOptions(students);
 
         } catch (error) {
 
@@ -491,7 +699,51 @@
         }
     }
 
+
+    // =====================================
+    // LOAD AVAILABLE CLASSES
+    // =====================================
+
+    function loadClassOptions(students) {
+
+        const classSelect =
+            document.getElementById("attendanceClass");
+
+        const currentValue = classSelect.value;
+
+        const classes = [
+            ...new Set(
+                students
+                    .map(student =>
+                        student.student_class || student.studentClass
+                    )
+                    .filter(Boolean)
+            )
+        ];
+
+        classSelect.innerHTML =
+            '<option value="">Select Class</option>';
+
+        classes.sort().forEach(className => {
+
+            const option = document.createElement("option");
+
+            option.value = className;
+            option.textContent = className;
+
+            classSelect.appendChild(option);
+
+        });
+
+        if (classes.includes(currentValue)) {
+            classSelect.value = currentValue;
+        }
+    }
+
+
+    // =====================================
     // ADD STUDENT
+    // =====================================
 
     document.getElementById("studentForm")
         .addEventListener("submit", async function(event) {
@@ -504,7 +756,8 @@
 
             name: document.getElementById("studentName").value.trim(),
 
-            studentClass: document.getElementById("studentClass").value.trim(),
+            studentClass:
+                document.getElementById("studentClass").value.trim(),
 
             mobileNo: document.getElementById("mobileNo").value.trim()
 
@@ -532,7 +785,10 @@
 
     });
 
+
+    // =====================================
     // DELETE STUDENT
+    // =====================================
 
     async function deleteStudent(id) {
 
@@ -561,7 +817,10 @@
         }
     }
 
+
+    // =====================================
     // LOAD FACULTY
+    // =====================================
 
     async function loadFaculty() {
 
@@ -606,9 +865,7 @@
                 values.forEach(value => {
 
                     const cell = document.createElement("td");
-
                     cell.textContent = value ?? "-";
-
                     row.appendChild(cell);
 
                 });
@@ -624,9 +881,7 @@
                     deleteFaculty(person.id);
 
                 actionCell.appendChild(deleteButton);
-
                 row.appendChild(actionCell);
-
                 table.appendChild(row);
 
             });
@@ -643,7 +898,10 @@
         }
     }
 
+
+    // =====================================
     // ADD FACULTY
+    // =====================================
 
     document.getElementById("facultyForm")
         .addEventListener("submit", async function(event) {
@@ -652,15 +910,20 @@
 
         const faculty = {
 
-            faculty_id: document.getElementById("facultyId").value.trim(),
+            faculty_id:
+                document.getElementById("facultyId").value.trim(),
 
-            name: document.getElementById("facultyName").value.trim(),
+            name:
+                document.getElementById("facultyName").value.trim(),
 
-            department: document.getElementById("department").value.trim(),
+            department:
+                document.getElementById("department").value.trim(),
 
-            email: document.getElementById("facultyEmail").value.trim(),
+            email:
+                document.getElementById("facultyEmail").value.trim(),
 
-            password: document.getElementById("facultyPassword").value
+            password:
+                document.getElementById("facultyPassword").value
 
         };
 
@@ -686,7 +949,10 @@
 
     });
 
+
+    // =====================================
     // DELETE FACULTY
+    // =====================================
 
     async function deleteFaculty(id) {
 
@@ -715,7 +981,453 @@
         }
     }
 
+
+    // =====================================
+    // LOAD ATTENDANCE FOR ADMIN
+    // =====================================
+
+    async function loadAttendance() {
+
+        const table = document.getElementById("attendanceTable");
+
+        const className =
+            document.getElementById("attendanceClass").value.trim();
+
+        const rollNo =
+            document.getElementById("searchRollNo").value.trim();
+
+        const date =
+            document.getElementById("attendanceDate").value;
+
+        const period =
+            document.getElementById("attendancePeriod").value;
+
+        if (!className && !rollNo) {
+
+            showAttendanceMessage(
+                "Please select a class or enter a roll number."
+            );
+
+            return;
+        }
+
+        table.innerHTML =
+            '<tr><td colspan="8">Loading attendance...</td></tr>';
+
+        showAttendanceMessage("");
+
+        try {
+
+            let endpoint;
+
+            if (rollNo) {
+
+                endpoint =
+                    "/api/attendance/search/" +
+                    encodeURIComponent(rollNo);
+
+            } else {
+
+                endpoint =
+                    "/api/attendance/class/" +
+                    encodeURIComponent(className);
+
+            }
+
+            const data = await apiRequest(endpoint);
+
+            if (!Array.isArray(data)) {
+                throw new Error("Unexpected attendance response.");
+            }
+
+            let records = data.filter(record =>
+                record.attendance_id !== null &&
+                record.attendance_id !== undefined
+            );
+
+            if (className) {
+
+                records = records.filter(record =>
+                    String(record.student_class) === String(className)
+                );
+
+            }
+
+            if (date) {
+
+                records = records.filter(record =>
+                    String(record.attendance_date).slice(0, 10) === date
+                );
+
+            }
+
+            if (period) {
+
+                records = records.filter(record =>
+                    Number(record.period_number) === Number(period)
+                );
+
+            }
+
+            displayAttendance(records);
+
+            if (records.length === 0) {
+
+                showAttendanceMessage(
+                    "No saved attendance records found for these filters.",
+                    "error"
+                );
+
+            } else {
+
+                showAttendanceMessage(
+                    records.length + " attendance record(s) found.",
+                    "success"
+                );
+
+            }
+
+        } catch (error) {
+
+            table.innerHTML =
+                '<tr><td colspan="8">' +
+                escapeHTML(error.message) +
+                '</td></tr>';
+
+            showAttendanceMessage(error.message);
+
+            console.error("Attendance loading error:", error);
+        }
+    }
+
+
+    // =====================================
+    // DISPLAY ATTENDANCE TABLE
+    // =====================================
+
+    function displayAttendance(records) {
+
+        const table = document.getElementById("attendanceTable");
+
+        table.innerHTML = "";
+
+        if (records.length === 0) {
+
+            table.innerHTML =
+                '<tr><td colspan="8">No saved attendance records.</td></tr>';
+
+            return;
+        }
+
+        records.forEach(record => {
+
+            const row = document.createElement("tr");
+
+            const values = [
+                record.roll_no,
+                record.student_name,
+                record.student_class,
+                record.attendance_date
+                    ? String(record.attendance_date).slice(0, 10)
+                    : "-",
+                record.period_number
+                    ? "Period " + record.period_number
+                    : "Not recorded",
+                record.subject || "Not recorded"
+            ];
+
+            values.forEach(value => {
+
+                const cell = document.createElement("td");
+                cell.textContent = value ?? "-";
+                row.appendChild(cell);
+
+            });
+
+            // Attendance status cell
+
+            const statusCell = document.createElement("td");
+
+            statusCell.textContent = record.status;
+
+            statusCell.className =
+                record.status === "Present"
+                    ? "status-present"
+                    : "status-absent";
+
+            row.appendChild(statusCell);
+
+            // Action cell
+
+            const actionCell = document.createElement("td");
+
+            const editButton = document.createElement("button");
+
+            editButton.textContent = "Edit";
+            editButton.className = "edit-btn";
+
+            editButton.onclick = () => {
+
+                editAttendance(
+                    record,
+                    statusCell,
+                    actionCell,
+                    editButton
+                );
+
+            };
+
+            actionCell.appendChild(editButton);
+
+            row.appendChild(actionCell);
+
+            table.appendChild(row);
+
+        });
+    }
+
+
+    // =====================================
+    // EDIT ATTENDANCE STATUS
+    // =====================================
+
+    function editAttendance(
+        record,
+        statusCell,
+        actionCell,
+        editButton
+    ) {
+
+        const oldStatus = record.status;
+
+        statusCell.innerHTML = "";
+
+        const select = document.createElement("select");
+
+        ["Present", "Absent"].forEach(status => {
+
+            const option = document.createElement("option");
+
+            option.value = status;
+            option.textContent = status;
+
+            if (status === oldStatus) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+
+        });
+
+        statusCell.appendChild(select);
+
+        actionCell.innerHTML = "";
+
+        const saveButton = document.createElement("button");
+
+        saveButton.textContent = "Save";
+        saveButton.className = "save-btn";
+
+        const cancelButton = document.createElement("button");
+
+        cancelButton.textContent = "Cancel";
+        cancelButton.className = "cancel-btn";
+
+        cancelButton.style.marginLeft = "5px";
+
+        saveButton.onclick = async () => {
+
+            const newStatus = select.value;
+
+            if (newStatus === oldStatus) {
+
+                showAttendanceMessage(
+                    "No attendance changes were made.",
+                    "error"
+                );
+
+                return;
+            }
+
+            if (!confirm(
+                "Change attendance from " +
+                oldStatus + " to " + newStatus + "?"
+            )) {
+                return;
+            }
+
+            saveButton.disabled = true;
+
+            try {
+
+                await adminApiRequest(
+                    "/api/attendance/admin/edit/" +
+                    encodeURIComponent(record.attendance_id),
+                    {
+                        method: "PUT",
+                        body: JSON.stringify({
+                            status: newStatus
+                        })
+                    }
+                );
+
+                record.status = newStatus;
+
+                statusCell.textContent = newStatus;
+
+                statusCell.className =
+                    newStatus === "Present"
+                        ? "status-present"
+                        : "status-absent";
+
+                actionCell.innerHTML = "";
+
+                const newEditButton =
+                    document.createElement("button");
+
+                newEditButton.textContent = "Edit";
+                newEditButton.className = "edit-btn";
+
+                newEditButton.onclick = () => {
+
+                    editAttendance(
+                        record,
+                        statusCell,
+                        actionCell,
+                        newEditButton
+                    );
+
+                };
+
+                actionCell.appendChild(newEditButton);
+
+                showAttendanceMessage(
+                    "Attendance updated successfully!",
+                    "success"
+                );
+
+                // Refresh dashboard totals after correction
+                loadTodaySummary();
+
+            } catch (error) {
+
+                saveButton.disabled = false;
+
+                showAttendanceMessage(error.message);
+
+                console.error("Attendance update error:", error);
+            }
+
+        };
+
+        cancelButton.onclick = () => {
+
+            statusCell.textContent = oldStatus;
+
+            statusCell.className =
+                oldStatus === "Present"
+                    ? "status-present"
+                    : "status-absent";
+
+            actionCell.innerHTML = "";
+
+            const newEditButton =
+                document.createElement("button");
+
+            newEditButton.textContent = "Edit";
+            newEditButton.className = "edit-btn";
+
+            newEditButton.onclick = () => {
+
+                editAttendance(
+                    record,
+                    statusCell,
+                    actionCell,
+                    newEditButton
+                );
+
+            };
+
+            actionCell.appendChild(newEditButton);
+
+        };
+
+        actionCell.appendChild(saveButton);
+        actionCell.appendChild(cancelButton);
+    }
+
+
+    // =====================================
+    // RESET ATTENDANCE FILTERS
+    // =====================================
+
+    function resetAttendanceFilters() {
+
+        document.getElementById("attendanceClass").value = "";
+
+        document.getElementById("attendanceDate").value = "";
+
+        document.getElementById("attendancePeriod").value = "";
+
+        document.getElementById("searchRollNo").value = "";
+
+        document.getElementById("attendanceTable").innerHTML =
+            '<tr><td colspan="8">Select a class or search by roll number.</td></tr>';
+
+        showAttendanceMessage("");
+
+    }
+
+
+    // =====================================
+    // LOAD TODAY'S SUMMARY
+    // =====================================
+
+    async function loadTodaySummary() {
+
+        const today = getTodayDate();
+
+        try {
+
+            const data = await apiRequest(
+                "/api/attendance/summary/today?date=" + today
+            );
+
+            document.getElementById("presentToday").textContent =
+                data.present ?? 0;
+
+            document.getElementById("absentToday").textContent =
+                data.absent ?? 0;
+
+        } catch (error) {
+
+            console.error("Attendance summary error:", error);
+
+        }
+    }
+
+
+    // =====================================
+    // GET LOCAL DATE
+    // =====================================
+
+    function getTodayDate() {
+
+        const today = new Date();
+
+        const year = today.getFullYear();
+
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+
+        const day = String(today.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    }
+
+
+    // =====================================
     // ESCAPE HTML
+    // =====================================
 
     function escapeHTML(value) {
 
@@ -731,24 +1443,41 @@
 
     }
 
+
+    // =====================================
     // LOGOUT
+    // =====================================
 
     function logout() {
 
         if (confirm("Are you sure you want to logout?")) {
+
+            sessionStorage.removeItem("adminToken");
+            sessionStorage.removeItem("token");
+
+            localStorage.removeItem("adminToken");
+            localStorage.removeItem("token");
 
             window.location.href = "admin-login.html";
 
         }
     }
 
+
+    // =====================================
     // LOAD DATA WHEN PAGE OPENS
+    // =====================================
 
     window.addEventListener("DOMContentLoaded", () => {
+
+        document.getElementById("attendanceDate").value =
+            getTodayDate();
 
         loadStudents();
 
         loadFaculty();
+
+        loadTodaySummary();
 
     });
 
