@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,51 +8,118 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <header>
         <h2>Admin Login</h2>
         <p>Student Attendance Management System</p>
     </header>
+
     <main class="container">
         <div class="card">
             <h2>Welcome Admin</h2>
+
             <form class="login-form" onsubmit="return adminLogin(event)">
                 <p>Username</p>
-                <input type="text" id="username"
-                       placeholder="Enter username" required>
-                <p>Password</p>
-                <input type="password" id="password"
-                       placeholder="Enter password" required>
+                <input
+                    type="text"
+                    id="username"
+                    placeholder="Enter username"
+                    autocomplete="username"
+                    required
+                >
 
-                <button type="submit">Login</button>
+                <p>Password</p>
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button type="submit" id="loginButton">Login</button>
                 <p id="message"></p>
             </form>
+
             <a href="index.html">Back to Home</a>
         </div>
     </main>
+
     <script>
-    function adminLogin(event) {
-        event.preventDefault();
+        const API_URL =
+            "https://student-attendance-system-production-d132.up.railway.app";
 
-        var username = document.getElementById("username").value.trim();
-        var password = document.getElementById("password").value;
-        var message = document.getElementById("message");
+        async function adminLogin(event) {
+            event.preventDefault();
 
-        // Frontend demonstration only
-        if (username === "" || password === "") {
-            message.textContent = "Please enter username and password.";
-            message.style.color = "red";
+            const username =
+                document.getElementById("username").value.trim();
+
+            const password =
+                document.getElementById("password").value;
+
+            const message =
+                document.getElementById("message");
+
+            const loginButton =
+                document.getElementById("loginButton");
+
+            message.textContent = "Checking login details...";
+            message.style.color = "blue";
+            loginButton.disabled = true;
+
+            try {
+                const response = await fetch(
+                    API_URL + "/api/admin/login",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Invalid username or password"
+                    );
+                }
+
+                sessionStorage.setItem("adminToken", data.token);
+                sessionStorage.setItem(
+                    "adminUsername",
+                    data.admin.username
+                );
+
+                message.textContent =
+                    "Login successful! Opening Admin Dashboard...";
+
+                message.style.color = "green";
+
+                setTimeout(() => {
+                    window.location.href = "admin-dashboard.html";
+                }, 700);
+
+            } catch (error) {
+                console.error("Admin login error:", error);
+
+                message.textContent =
+                    error.message || "Unable to connect to server.";
+
+                message.style.color = "red";
+            } finally {
+                loginButton.disabled = false;
+            }
+
             return false;
         }
+    </script>
 
-        message.textContent = "Login successful! Opening Admin Dashboard...";
-        message.style.color = "green";
-
-        setTimeout(function() {
-            window.location.href = "admin-dashboard.html";
-        }, 500);
-
-        return false;
-    }
-</script>
 </body>
 </html>
