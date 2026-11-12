@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: auto;
             background: white;
             padding: 25px;
@@ -49,12 +49,45 @@
             background: #1d4ed8;
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .logout {
             background: #dc2626;
         }
 
         .logout:hover {
             background: #b91c1c;
+        }
+
+        .controls {
+            margin-top: 15px;
+        }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .summary div {
+            background: #e9efff;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .form-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        label {
+            font-weight: bold;
         }
 
         table {
@@ -73,26 +106,9 @@
             background: #e9efff;
         }
 
-        .summary {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .summary div {
-            background: #e9efff;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
         #message {
             margin-top: 15px;
             font-weight: bold;
-        }
-
-        .controls {
-            margin-top: 15px;
         }
 
         @media (max-width: 600px) {
@@ -131,17 +147,47 @@
 
     <h3>Mark Student Attendance</h3>
 
-    <label for="classSelect">Select Class:</label>
-    <select id="classSelect">
-        <option value="">Select Class</option>
-    </select>
+    <div class="form-section">
 
-    <br>
+        <p>
+            <label for="classSelect">Select Class:</label><br>
+            <select id="classSelect">
+                <option value="">Select Class</option>
+            </select>
+        </p>
 
-    <label for="attendanceDate">Date:</label>
-    <input type="date" id="attendanceDate">
+        <p>
+            <label for="attendanceDate">Attendance Date:</label><br>
+            <input type="date" id="attendanceDate">
+        </p>
+
+        <p>
+            <label for="periodSelect">Select Period:</label><br>
+            <select id="periodSelect">
+                <option value="">Select Period</option>
+                <option value="1">Period 1</option>
+                <option value="2">Period 2</option>
+                <option value="3">Period 3</option>
+                <option value="4">Period 4</option>
+                <option value="5">Period 5</option>
+                <option value="6">Period 6</option>
+            </select>
+        </p>
+
+        <p>
+            <label for="subject">Subject:</label><br>
+            <input
+                type="text"
+                id="subject"
+                placeholder="Enter subject name"
+                maxlength="100"
+            >
+        </p>
+
+    </div>
 
     <div class="controls">
+
         <button type="button" onclick="markAll('Present')">
             All Present
         </button>
@@ -149,10 +195,11 @@
         <button type="button" onclick="markAll('Absent')">
             All Absent
         </button>
+
     </div>
 
     <div class="summary">
-        <div>Total: <strong id="total">0</strong></div>
+        <div>Total Students: <strong id="total">0</strong></div>
         <div>Present: <strong id="present">0</strong></div>
         <div>Absent: <strong id="absent">0</strong></div>
     </div>
@@ -173,7 +220,11 @@
         </tbody>
     </table>
 
-    <button type="button" onclick="saveAttendance()">
+    <button
+        type="button"
+        id="saveButton"
+        onclick="saveAttendance()"
+    >
         Save Attendance
     </button>
 
@@ -182,33 +233,48 @@
 </div>
 
 <script>
+
     // RAILWAY BACKEND API URL
-    const API = "https://student-attendance-system-production-d132.up.railway.app/api";
+    const API =
+        "https://student-attendance-system-production-d132.up.railway.app/api";
+
 
     // FACULTY DETAILS
     const facultyID = sessionStorage.getItem("facultyID");
     const facultyName = sessionStorage.getItem("facultyName");
-    const facultyDepartment = sessionStorage.getItem("facultyDepartment");
+    const facultyDepartment =
+        sessionStorage.getItem("facultyDepartment");
+
 
     let students = [];
 
+
     // CHECK FACULTY LOGIN
     if (!facultyID) {
+
         alert("Please login first.");
+
         window.location.href = "faculty-login.html";
+
     } else {
+
         initializeDashboard();
+
     }
+
 
     // INITIALIZE DASHBOARD
     function initializeDashboard() {
 
-        document.getElementById("facultyID").textContent = facultyID;
+        document.getElementById("facultyID").textContent =
+            facultyID;
+
         document.getElementById("facultyName").textContent =
             facultyName || "";
 
         document.getElementById("facultyDepartment").textContent =
             facultyDepartment || "";
+
 
         // SET TODAY'S DATE
         const today = new Date();
@@ -217,7 +283,9 @@
             today.getTime() - today.getTimezoneOffset() * 60000
         ).toISOString().split("T")[0];
 
-        document.getElementById("attendanceDate").value = localDate;
+        document.getElementById("attendanceDate").value =
+            localDate;
+
 
         // LOAD CLASSES
         loadClasses();
@@ -225,37 +293,53 @@
         // CLASS CHANGE EVENT
         document.getElementById("classSelect")
             .addEventListener("change", loadStudents);
+
     }
+
 
     // LOGOUT
     function logout() {
+
         sessionStorage.removeItem("facultyID");
         sessionStorage.removeItem("facultyName");
         sessionStorage.removeItem("facultyDepartment");
 
         window.location.href = "faculty-login.html";
+
     }
+
 
     // API REQUEST HELPER
     async function apiRequest(url, options = {}) {
 
         const response = await fetch(url, options);
 
-        const data = await response.json();
+        let data;
+
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error("Invalid response from server.");
+        }
 
         if (!response.ok) {
+
             throw new Error(
                 data.message || "Server request failed."
             );
+
         }
 
         return data;
+
     }
+
 
     // LOAD CLASSES FROM DATABASE
     async function loadClasses() {
 
-        const classSelect = document.getElementById("classSelect");
+        const classSelect =
+            document.getElementById("classSelect");
 
         showMessage("Loading classes...", "#333");
 
@@ -264,12 +348,18 @@
             const data = await apiRequest(`${API}/students`);
 
             if (!Array.isArray(data)) {
-                throw new Error("Invalid student data received from server.");
+
+                throw new Error(
+                    "Invalid student data received from server."
+                );
+
             }
 
             const classes = [
                 ...new Set(
-                    data.map(student => student.student_class).filter(Boolean)
+                    data
+                        .map(student => student.student_class)
+                        .filter(Boolean)
                 )
             ];
 
@@ -284,12 +374,17 @@
                 option.textContent = className;
 
                 classSelect.appendChild(option);
+
             });
 
             if (classes.length === 0) {
+
                 showMessage("No student classes found.", "red");
+
             } else {
+
                 showMessage("Classes loaded successfully.", "green");
+
             }
 
         } catch (error) {
@@ -300,8 +395,11 @@
                 "Unable to load classes: " + error.message,
                 "red"
             );
+
         }
+
     }
+
 
     // LOAD STUDENTS BASED ON SELECTED CLASS
     async function loadStudents() {
@@ -320,7 +418,9 @@
                 '<tr><td colspan="3">Select a class.</td></tr>';
 
             updateSummary();
+
             return;
+
         }
 
         table.innerHTML =
@@ -331,11 +431,14 @@
             const data = await apiRequest(`${API}/students`);
 
             if (!Array.isArray(data)) {
+
                 throw new Error("Invalid student data received.");
+
             }
 
             students = data.filter(
-                student => student.student_class === selectedClass
+                student =>
+                    student.student_class === selectedClass
             );
 
             if (students.length === 0) {
@@ -344,28 +447,45 @@
                     '<tr><td colspan="3">No students found in this class.</td></tr>';
 
                 updateSummary();
+
                 return;
+
             }
 
             table.innerHTML = students.map(student => `
+
                 <tr>
+
                     <td>${escapeHTML(student.roll_no)}</td>
+
                     <td>${escapeHTML(student.name)}</td>
+
                     <td>
-                        <select class="status"
-                                data-id="${Number(student.id)}">
+
+                        <select
+                            class="status"
+                            data-id="${Number(student.id)}"
+                        >
+
                             <option value="Present">Present</option>
+
                             <option value="Absent">Absent</option>
+
                         </select>
+
                     </td>
+
                 </tr>
+
             `).join("");
+
 
             document.querySelectorAll(".status").forEach(select => {
 
                 select.addEventListener("change", updateSummary);
 
             });
+
 
             updateSummary();
 
@@ -386,30 +506,41 @@
             updateSummary();
 
             showMessage(error.message, "red");
+
         }
+
     }
+
 
     // PREVENT HTML INJECTION
     function escapeHTML(value) {
 
         return String(value ?? "").replace(/[&<>"']/g, char => ({
+
             "&": "&amp;",
             "<": "&lt;",
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#39;"
+
         })[char]);
+
     }
+
 
     // MARK ALL STUDENTS
     function markAll(status) {
 
         document.querySelectorAll(".status").forEach(select => {
+
             select.value = status;
+
         });
 
         updateSummary();
+
     }
+
 
     // UPDATE ATTENDANCE SUMMARY
     function updateSummary() {
@@ -422,87 +553,172 @@
             selects.length;
 
         document.getElementById("present").textContent =
-            selects.filter(select => select.value === "Present").length;
+            selects.filter(
+                select => select.value === "Present"
+            ).length;
 
         document.getElementById("absent").textContent =
-            selects.filter(select => select.value === "Absent").length;
+            selects.filter(
+                select => select.value === "Absent"
+            ).length;
+
     }
 
-    // SAVE ATTENDANCE TO RAILWAY DATABASE
+
+    // SAVE PERIOD-WISE AND SUBJECT-WISE ATTENDANCE
     async function saveAttendance() {
 
         const date =
             document.getElementById("attendanceDate").value;
 
+        const periodNumber =
+            document.getElementById("periodSelect").value;
+
+        const subject =
+            document.getElementById("subject").value.trim();
+
+
+        // VALIDATE DATE
         if (!date) {
+
             showMessage("Please select a date.", "red");
+
             return;
+
         }
 
+
+        // VALIDATE FACULTY
         if (!facultyID || !Number.isInteger(Number(facultyID))) {
+
             showMessage(
                 "Invalid faculty login. Please login again.",
                 "red"
             );
+
             return;
+
         }
 
+
+        // VALIDATE CLASS
         if (students.length === 0) {
+
             showMessage(
                 "Please select a class with students.",
                 "red"
             );
+
             return;
+
         }
 
+
+        // VALIDATE PERIOD
+        if (
+            !periodNumber ||
+            Number(periodNumber) < 1 ||
+            Number(periodNumber) > 6
+        ) {
+
+            showMessage("Please select Period 1 to Period 6.", "red");
+
+            return;
+
+        }
+
+
+        // VALIDATE SUBJECT
+        if (!subject) {
+
+            showMessage("Please enter the subject name.", "red");
+
+            return;
+
+        }
+
+
+        // COLLECT STUDENT ATTENDANCE
         const records = [
             ...document.querySelectorAll(".status")
         ].map(select => ({
+
             studentId: Number(select.dataset.id),
+
             status: select.value
+
         }));
 
+
         if (records.length !== students.length) {
+
             showMessage(
                 "Please load the students again.",
                 "red"
             );
+
             return;
+
         }
 
-        const saveButton = document.querySelector(
-            'button[onclick="saveAttendance()"]'
-        );
+
+        const saveButton =
+            document.getElementById("saveButton");
 
         saveButton.disabled = true;
+
         saveButton.textContent = "Saving...";
+
 
         try {
 
-            const data = await apiRequest(`${API}/attendance/save`, {
+            const data = await apiRequest(
+                `${API}/attendance/save`,
+                {
 
-                method: "POST",
+                    method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-                body: JSON.stringify({
-                    date: date,
-                    facultyId: Number(facultyID),
-                    records: records
-                })
-            });
+                    body: JSON.stringify({
+
+                        date: date,
+
+                        facultyId: Number(facultyID),
+
+                        periodNumber: Number(periodNumber),
+
+                        subject: subject,
+
+                        records: records
+
+                    })
+
+                }
+            );
+
 
             if (!data.success) {
+
                 throw new Error(
-                    data.message || "Attendance could not be saved."
+                    data.message ||
+                    "Attendance could not be saved."
                 );
+
             }
 
+
             showMessage(
-                data.message || "Attendance saved successfully!",
+
+                `Attendance saved successfully! 
+                Class: ${document.getElementById("classSelect").value},
+                Period: ${periodNumber},
+                Subject: ${subject}`,
+
                 "green"
+
             );
 
         } catch (error) {
@@ -517,17 +733,24 @@
         } finally {
 
             saveButton.disabled = false;
+
             saveButton.textContent = "Save Attendance";
+
         }
+
     }
+
 
     // DISPLAY MESSAGES
     function showMessage(message, color) {
 
-        const element = document.getElementById("message");
+        const element =
+            document.getElementById("message");
 
         element.textContent = message;
+
         element.style.color = color;
+
     }
 
 </script>

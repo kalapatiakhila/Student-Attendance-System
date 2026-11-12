@@ -1,11 +1,21 @@
+
 const express = require("express");
 const db = require("./db");
 
 const router = express.Router();
 
-// Get attendance summary for today
+// ======================================
+// 1. GET ATTENDANCE SUMMARY FOR A DATE
+// ======================================
 router.get("/summary/today", (req, res) => {
     const date = req.query.date;
+
+    if (!date) {
+        return res.status(400).json({
+            success: false,
+            message: "Attendance date is required."
+        });
+    }
 
     const sql = `
         SELECT
@@ -32,20 +42,28 @@ router.get("/summary/today", (req, res) => {
     });
 });
 
-// Get attendance history for one student
+
+// ======================================
+// 2. GET ATTENDANCE HISTORY FOR STUDENT
+// ======================================
 router.get("/student/:studentId", (req, res) => {
     const sql = `
         SELECT
+            a.id AS attendance_id,
             a.student_id,
+            a.faculty_id,
             a.attendance_date,
+            a.period_number,
+            a.subject,
             a.status,
+            a.created_at,
             s.name AS student_name,
             s.roll_no,
             s.student_class
         FROM attendance a
         JOIN students s ON s.id = a.student_id
         WHERE a.student_id = ?
-        ORDER BY a.attendance_date DESC
+        ORDER BY a.attendance_date DESC, a.period_number ASC
     `;
 
     db.query(sql, [req.params.studentId], (err, results) => {
@@ -61,13 +79,16 @@ router.get("/student/:studentId", (req, res) => {
     });
 });
 
-// Get attendance percentage
+
+// ======================================
+// 3. GET ATTENDANCE PERCENTAGE
+// ======================================
 router.get("/percentage/:studentId", (req, res) => {
     const sql = `
         SELECT
-            COUNT(*) AS totalDays,
-            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS presentDays,
-            SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) AS absentDays
+            COUNT(*) AS totalPeriods,
+            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) AS presentPeriods,
+            SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) AS absentPeriods
         FROM attendance
         WHERE student_id = ?
     `;
@@ -81,31 +102,144 @@ router.get("/percentage/:studentId", (req, res) => {
             });
         }
 
-        const totalDays = Number(results[0].totalDays || 0);
-        const presentDays = Number(results[0].presentDays || 0);
-        const absentDays = Number(results[0].absentDays || 0);
+        const totalPeriods = Number(results[0].totalPeriods || 0);
+        const presentPeriods = Number(results[0].presentPeriods || 0);
+        const absentPeriods = Number(results[0].absentPeriods || 0);
 
-        const percentage = totalDays > 0
-            ? (presentDays / totalDays) * 100
+        const percentage = totalPeriods > 0
+            ? (presentPeriods / totalPeriods) * 100
             : 0;
 
         res.json({
-            totalDays,
-            presentDays,
-            absentDays,
-            percentage: Number(percentage.toFixed(2))
+            totalPeriods,
+            presentPeriods,
+            absentPeriods,
+            percentage: Number(percentage.toFixed(2)),
+
+            // Old field names retained for compatibility
+            totalDays: totalPeriods,
+            presentDays: presentPeriods,
+            absentDays: absentPeriods
         });
     });
 });
 
-// Save attendance
-router.post("/save", (req, res) => {
-    const { date, facultyId, records } = req.body;
 
-    if (!date || !facultyId || !Array.isArray(records) || records.length === 0) {
+// ======================================
+// 4. GET ALL ATTENDANCE FOR A CLASS
+// ======================================
+router.get("/class/:className", (req, res) => {
+    const sql = `
+        SELECT
+            a.id AS attendance_id,
+            a.student_id,
+            s.roll_no,
+            s.name AS student_name,
+            s.student_class,
+            a.faculty_id,
+            a.attendance_date,
+            a.period_number,
+            a.subject,
+            a.status
+        FROM students s
+        LEFT JOIN attendance a ON a.student_id = s.id
+        WHERE s.student_class = ?
+        ORDER BY s.roll_no, a.attendance_date DESC, a.period_number
+    `;
+
+    db.query(sql, [req.params.className], (err, results) => {
+        if (err) {
+            console.error("Class attendance error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Could not load class attendance."
+            });
+        }
+
+        res.json(results);
+    });
+});
+
+
+// ======================================
+// 5. SEARCH ATTENDANCE BY ROLL NUMBER
+// ======================================
+router.get("/search/:rollNo", (req, res) => {
+    const sql = `
+        SELECT
+            a.id AS attendance_id,
+            a.student_id,
+            s.roll_no,
+            s.name AS student_name,
+            s.student_class,
+            a.attendance_date,
+            a.period_number,
+            a.subject,
+            a.status,
+            a.faculty_id
+        FROM students s
+        LEFT JOIN attendance a ON a.student_id = s.id
+        WHERE s.roll_no = ?
+        ORDER BY a.attendance_date DESC, a.period_number ASC
+    `;
+
+    db.query(sql, [req.params.rollNo], (err, results) => {
+        if (err) {
+            console.error("Roll number search error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Could not search attendance."
+            });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Student not found."
+            });
+        }
+
+        res.json(results);
+    });
+});
+
+
+// ======================================
+// 6. SAVE PERIOD-WISE ATTENDANCE
+// ======================================
+router.post("/save", (req, res) => {
+    const { date, facultyId, periodNumber, subject, records } = req.body;
+
+    if (
+        !date ||
+        !facultyId ||
+        !Number.isInteger(Number(periodNumber)) ||
+        Number(periodNumber) < 1 ||
+        Number(periodNumber) > 6 ||
+        !subject ||
+        !subject.trim() ||
+        !Array.isArray(records) ||
+        records.length === 0
+    ) {
         return res.status(400).json({
             success: false,
-            message: "Date, faculty ID and attendance records are required."
+            message: "Date, faculty, period (1-6), subject and records are required."
+        });
+    }
+
+    const studentIds = records.map(record => Number(record.studentId));
+
+    if (
+        records.some(record =>
+            !Number.isInteger(Number(record.studentId)) ||
+            Number(record.studentId) <= 0 ||
+            !["Present", "Absent"].includes(record.status)
+        ) ||
+        new Set(studentIds).size !== studentIds.length
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: "Attendance records are invalid or contain duplicate students."
         });
     }
 
@@ -127,57 +261,89 @@ router.post("/save", (req, res) => {
             });
         }
 
-        let completed = 0;
-        let failed = false;
-
-        records.forEach(record => {
-            const { studentId, status } = record;
-
-            if (!studentId || !["Present", "Absent"].includes(status)) {
-                if (!failed) {
-                    failed = true;
-                    return res.status(400).json({
-                        success: false,
-                        message: "Invalid attendance record."
-                    });
-                }
-                return;
+        // Use a transaction so a failed save does not leave
+        // only some students' attendance saved.
+        db.beginTransaction(err => {
+            if (err) {
+                console.error("Transaction error:", err);
+                return res.status(500).json({
+                    success: false,
+                    message: "Could not start attendance saving."
+                });
             }
 
-            const sql = `
-                INSERT INTO attendance
-                    (student_id, faculty_id, attendance_date, status)
-                VALUES (?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    faculty_id = VALUES(faculty_id),
-                    status = VALUES(status)
-            `;
+            let index = 0;
 
-            db.query(sql, [studentId, facultyId, date, status], err => {
-                if (err) {
-                    console.error("Attendance save error:", err);
+            function saveNext() {
+                if (index >= records.length) {
+                    return db.commit(err => {
+                        if (err) {
+                            return db.rollback(() => {
+                                console.error("Commit error:", err);
+                                res.status(500).json({
+                                    success: false,
+                                    message: "Could not finish saving attendance."
+                                });
+                            });
+                        }
 
-                    if (!failed) {
-                        failed = true;
-                        return res.status(500).json({
-                            success: false,
-                            message: "Could not save attendance."
+                        res.json({
+                            success: true,
+                            message: "Period-wise attendance saved successfully!",
+                            savedRecords: records.length,
+                            periodNumber: Number(periodNumber),
+                            subject: subject.trim()
                         });
-                    }
-                    return;
-                }
-
-                if (failed) return;
-
-                completed++;
-
-                if (completed === records.length) {
-                    res.json({
-                        success: true,
-                        message: "Attendance saved successfully!"
                     });
                 }
-            });
+
+                const record = records[index];
+
+                const sql = `
+                    INSERT INTO attendance
+                    (
+                        student_id,
+                        faculty_id,
+                        attendance_date,
+                        period_number,
+                        subject,
+                        status
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        faculty_id = VALUES(faculty_id),
+                        subject = VALUES(subject),
+                        status = VALUES(status)
+                `;
+
+                db.query(
+                    sql,
+                    [
+                        record.studentId,
+                        facultyId,
+                        date,
+                        Number(periodNumber),
+                        subject.trim(),
+                        record.status
+                    ],
+                    err => {
+                        if (err) {
+                            return db.rollback(() => {
+                                console.error("Attendance save error:", err);
+                                res.status(500).json({
+                                    success: false,
+                                    message: "Could not save attendance. No partial changes were committed."
+                                });
+                            });
+                        }
+
+                        index++;
+                        saveNext();
+                    }
+                );
+            }
+
+            saveNext();
         });
     });
 });
