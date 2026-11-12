@@ -256,17 +256,11 @@
 
     </div>
 
-
     <!-- ADMIN ATTENDANCE EDITING -->
 
     <div class="section">
 
         <h2>Manage Student Attendance</h2>
-
-        <p class="hint">
-            Admin can correct an existing attendance record.
-            Select a class, date and period, or search using a student roll number.
-        </p>
 
         <br>
 
@@ -278,10 +272,7 @@
                 <option value="">Select Class</option>
             </select>
 
-            <input
-                type="date"
-                id="attendanceDate"
-            >
+            <input type="date" id="attendanceDate">
 
             <select id="attendancePeriod">
                 <option value="">All Periods</option>
@@ -308,11 +299,6 @@
             </button>
 
         </div>
-
-        <p class="hint">
-            Choose a class or enter a roll number.
-            Select a date and period to narrow the results.
-        </p>
 
         <br>
 
@@ -355,7 +341,6 @@
 
     </div>
 
-
     <!-- ADD STUDENT -->
 
     <div class="section">
@@ -388,7 +373,6 @@
         </form>
 
     </div>
-
 
     <!-- STUDENT DETAILS -->
 
@@ -428,7 +412,6 @@
 
     </div>
 
-
     <!-- ADD FACULTY -->
 
     <div class="section">
@@ -451,9 +434,6 @@
                 <input type="email" id="facultyEmail"
                     placeholder="Faculty Email" required>
 
-                <input type="password" id="facultyPassword"
-                    placeholder="Faculty Password" required>
-
             </div>
 
             <button type="submit" class="add-btn">
@@ -463,7 +443,6 @@
         </form>
 
     </div>
-
 
     <!-- FACULTY DETAILS -->
 
@@ -508,7 +487,6 @@
     Student Attendance Management System
 </footer>
 
-
 <script>
 
     // =====================================
@@ -519,6 +497,7 @@
         "https://student-attendance-system-production-d132.up.railway.app";
 
     const messageBox = document.getElementById("message");
+
     const attendanceMessage =
         document.getElementById("attendanceMessage");
 
@@ -613,6 +592,25 @@
     function showAttendanceMessage(message, type = "error") {
         attendanceMessage.textContent = message;
         attendanceMessage.className = type;
+    }
+
+
+    // =====================================
+    // GENERATE TEMPORARY FACULTY PASSWORD
+    // =====================================
+
+    function generateTemporaryPassword() {
+
+        const characters =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$";
+
+        const randomValues = new Uint32Array(12);
+
+        crypto.getRandomValues(randomValues);
+
+        return Array.from(randomValues)
+            .map(value => characters[value % characters.length])
+            .join("");
     }
 
 
@@ -908,6 +906,8 @@
 
         event.preventDefault();
 
+        const temporaryPassword = generateTemporaryPassword();
+
         const faculty = {
 
             faculty_id:
@@ -922,8 +922,7 @@
             email:
                 document.getElementById("facultyEmail").value.trim(),
 
-            password:
-                document.getElementById("facultyPassword").value
+            password: temporaryPassword
 
         };
 
@@ -937,6 +936,12 @@
             showMessage("Faculty added successfully!", "success");
 
             this.reset();
+
+            alert(
+                "Faculty added successfully!\n\n" +
+                "Temporary Password: " + temporaryPassword +
+                "\n\nPlease share this password securely with the faculty member."
+            );
 
             loadFaculty();
 
@@ -1144,8 +1149,6 @@
 
             });
 
-            // Attendance status cell
-
             const statusCell = document.createElement("td");
 
             statusCell.textContent = record.status;
@@ -1156,8 +1159,6 @@
                     : "status-absent";
 
             row.appendChild(statusCell);
-
-            // Action cell
 
             const actionCell = document.createElement("td");
 
@@ -1306,7 +1307,6 @@
                     "success"
                 );
 
-                // Refresh dashboard totals after correction
                 loadTodaySummary();
 
             } catch (error) {
