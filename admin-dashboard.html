@@ -2,214 +2,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Student Attendance System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - Student Attendance System</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
 
-        body {
-            background: #f3f5fa;
-            color: #263238;
-        }
+body {
+    background: #f3f5fa;
+    color: #263238;
+}
 
-        header {
-            background: #263b80;
-            color: white;
-            padding: 22px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
+header {
+    background: #263b80;
+    color: white;
+    padding: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
 
-        header h2 {
-            margin-bottom: 5px;
-        }
+header h2 { margin-bottom: 5px; }
 
-        button {
-            border: none;
-            padding: 10px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
+button {
+    border: none;
+    padding: 10px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
-        .logout {
-            background: #e74c3c;
-            color: white;
-        }
+.logout, .delete-btn {
+    background: #e74c3c;
+    color: white;
+}
 
-        .container {
-            max-width: 1200px;
-            margin: 25px auto;
-            padding: 15px;
-        }
+.container {
+    max-width: 1200px;
+    margin: 25px auto;
+    padding: 15px;
+}
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 18px;
-            margin-bottom: 25px;
-        }
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px;
+    margin-bottom: 25px;
+}
 
-        .card {
-            background: white;
-            padding: 23px;
-            border-radius: 10px;
-            box-shadow: 0 2px 9px #00000012;
-        }
+.card, .section {
+    background: white;
+    padding: 23px;
+    border-radius: 10px;
+    box-shadow: 0 2px 9px #00000012;
+}
 
-        .card h3 {
-            color: #596579;
-            font-size: 15px;
-        }
+.section { margin-bottom: 25px; }
 
-        .card p {
-            font-size: 30px;
-            font-weight: bold;
-            margin-top: 12px;
-            color: #263b80;
-        }
+.card h3 {
+    color: #596579;
+    font-size: 15px;
+}
 
-        .section {
-            background: white;
-            padding: 22px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 9px #00000012;
-        }
+.card p {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 12px;
+    color: #263b80;
+}
 
-        .section h2 {
-            margin-bottom: 18px;
-            color: #263b80;
-        }
+.section h2 {
+    margin-bottom: 18px;
+    color: #263b80;
+}
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 12px;
-        }
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+}
 
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccd2df;
-            border-radius: 5px;
-            background: white;
-        }
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccd2df;
+    border-radius: 5px;
+    background: white;
+}
 
-        .add-btn {
-            background: #263b80;
-            color: white;
-            margin-top: 12px;
-        }
+.add-btn, .search-btn, .edit-btn, .view-btn {
+    background: #263b80;
+    color: white;
+}
 
-        .refresh-btn {
-            background: #168b66;
-            color: white;
-            margin-bottom: 12px;
-        }
+.refresh-btn, .save-btn {
+    background: #168b66;
+    color: white;
+    margin-bottom: 12px;
+}
 
-        .search-btn {
-            background: #263b80;
-            color: white;
-        }
+.cancel-btn {
+    background: #777;
+    color: white;
+}
 
-        .edit-btn {
-            background: #e09b22;
-            color: white;
-        }
+.table-wrap { overflow-x: auto; }
 
-        .save-btn {
-            background: #168b66;
-            color: white;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
 
-        .cancel-btn {
-            background: #777;
-            color: white;
-        }
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e8ef;
+}
 
-        .table-wrap {
-            overflow-x: auto;
-        }
+th { background: #edf1fa; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 650px;
-        }
+#message, #attendanceMessage {
+    margin-bottom: 15px;
+    font-weight: bold;
+}
 
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e8ef;
-        }
+.error { color: #d63031; }
+.success { color: #168044; }
 
-        th {
-            background: #edf1fa;
-        }
+.status-present {
+    color: #168044;
+    font-weight: bold;
+}
 
-        .delete-btn {
-            background: #e74c3c;
-            color: white;
-        }
+.status-absent {
+    color: #d63031;
+    font-weight: bold;
+}
 
-        #message, #attendanceMessage {
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
+.faculty-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
 
-        .error {
-            color: #d63031;
-        }
+.details-box {
+    background: #f3f5fa;
+    padding: 18px;
+    border-radius: 8px;
+    margin-top: 15px;
+    line-height: 2;
+    display: none;
+}
 
-        .success {
-            color: #168044;
-        }
+.details-box h3 {
+    color: #263b80;
+    margin-bottom: 8px;
+}
 
-        .hint {
-            color: #667085;
-            font-size: 13px;
-            margin-top: 12px;
-            line-height: 1.5;
-        }
+.footer {
+    text-align: center;
+    padding: 20px;
+    color: #777;
+}
 
-        .status-present {
-            color: #168044;
-            font-weight: bold;
-        }
-
-        .status-absent {
-            color: #d63031;
-            font-weight: bold;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #777;
-        }
-
-        @media(max-width: 600px) {
-            .section {
-                padding: 15px;
-            }
-        }
-    </style>
+@media(max-width: 600px) {
+    .section { padding: 15px; }
+}
+</style>
 </head>
 
 <body>
@@ -219,267 +192,182 @@
         <h2>Admin Dashboard</h2>
         <p>Student Attendance Management System</p>
     </div>
-
     <button class="logout" onclick="logout()">Logout</button>
 </header>
 
 <div class="container">
 
-    <h2>Welcome, Admin!</h2>
+<h2>Welcome, Admin!</h2>
+<br>
+
+<div id="message"></div>
+
+<!-- DASHBOARD SUMMARY -->
+
+<div class="stats">
+    <div class="card">
+        <h3>Total Students</h3>
+        <p id="totalStudents">0</p>
+    </div>
+
+    <div class="card">
+        <h3>Total Faculty</h3>
+        <p id="totalFaculty">0</p>
+    </div>
+
+    <div class="card">
+        <h3>Present Today</h3>
+        <p id="presentToday">—</p>
+    </div>
+
+    <div class="card">
+        <h3>Absent Today</h3>
+        <p id="absentToday">—</p>
+    </div>
+</div>
+
+<!-- ATTENDANCE MANAGEMENT -->
+
+<div class="section">
+    <h2>Manage Student Attendance</h2>
     <br>
 
-    <div id="message"></div>
+    <div id="attendanceMessage"></div>
 
-    <!-- DASHBOARD SUMMARY -->
+    <div class="form-grid">
+        <select id="attendanceClass">
+            <option value="">Select Class</option>
+        </select>
 
-    <div class="stats">
+        <input type="date" id="attendanceDate">
 
-        <div class="card">
-            <h3>Total Students</h3>
-            <p id="totalStudents">0</p>
-        </div>
+        <select id="attendancePeriod">
+            <option value="">All Periods</option>
+            <option value="1">Period 1</option>
+            <option value="2">Period 2</option>
+            <option value="3">Period 3</option>
+            <option value="4">Period 4</option>
+            <option value="5">Period 5</option>
+            <option value="6">Period 6</option>
+        </select>
 
-        <div class="card">
-            <h3>Total Faculty</h3>
-            <p id="totalFaculty">0</p>
-        </div>
+        <input type="text" id="searchRollNo"
+               placeholder="Search by Roll Number">
 
-        <div class="card">
-            <h3>Present Today</h3>
-            <p id="presentToday">—</p>
-        </div>
-
-        <div class="card">
-            <h3>Absent Today</h3>
-            <p id="absentToday">—</p>
-        </div>
-
+        <button class="search-btn" onclick="loadAttendance()">
+            Search Attendance
+        </button>
     </div>
 
-    <!-- ADMIN ATTENDANCE EDITING -->
+    <br>
 
-    <div class="section">
+    <button class="refresh-btn" onclick="resetAttendanceFilters()">
+        Reset Filters
+    </button>
 
-        <h2>Manage Student Attendance</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Roll Number</th>
+                    <th>Student Name</th>
+                    <th>Class</th>
+                    <th>Date</th>
+                    <th>Period</th>
+                    <th>Subject</th>
+                    <th>Attendance Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
 
-        <br>
+            <tbody id="attendanceTable">
+                <tr>
+                    <td colspan="8">Select a class or search by roll number.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-        <div id="attendanceMessage"></div>
+<!-- ADD STUDENT -->
 
+<div class="section">
+    <h2>Add Student</h2>
+
+    <form id="studentForm">
         <div class="form-grid">
-
-            <select id="attendanceClass">
-                <option value="">Select Class</option>
-            </select>
-
-            <input type="date" id="attendanceDate">
-
-            <select id="attendancePeriod">
-                <option value="">All Periods</option>
-                <option value="1">Period 1</option>
-                <option value="2">Period 2</option>
-                <option value="3">Period 3</option>
-                <option value="4">Period 4</option>
-                <option value="5">Period 5</option>
-                <option value="6">Period 6</option>
-            </select>
-
-            <input
-                type="text"
-                id="searchRollNo"
-                placeholder="Search by Roll Number"
-            >
-
-            <button
-                type="button"
-                class="search-btn"
-                onclick="loadAttendance()"
-            >
-                Search Attendance
-            </button>
-
+            <input type="text" id="rollNo" placeholder="Roll Number" required>
+            <input type="text" id="studentName" placeholder="Student Name" required>
+            <input type="text" id="studentClass" placeholder="Class" required>
+            <input type="tel" id="mobileNo"
+                   placeholder="Parent Mobile Number"
+                   pattern="[0-9]{10}" required>
         </div>
 
-        <br>
+        <button type="submit" class="add-btn">Add Student</button>
+    </form>
+</div>
 
-        <button
-            type="button"
-            class="refresh-btn"
-            onclick="resetAttendanceFilters()"
-        >
-            Reset Filters
-        </button>
+<!-- STUDENT DETAILS -->
 
-        <div class="table-wrap">
+<div class="section">
+    <h2>Student Details</h2>
 
-            <table>
+    <button class="refresh-btn" onclick="loadStudents()">
+        Refresh Students
+    </button>
 
-                <thead>
-                    <tr>
-                        <th>Roll Number</th>
-                        <th>Student Name</th>
-                        <th>Class</th>
-                        <th>Date</th>
-                        <th>Period</th>
-                        <th>Subject</th>
-                        <th>Attendance Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Roll Number</th>
+                    <th>Name</th>
+                    <th>Class</th>
+                    <th>Parent Mobile</th>
+                    <th>Registration</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
 
-                <tbody id="attendanceTable">
-                    <tr>
-                        <td colspan="8">
-                            Select a class or search by roll number.
-                        </td>
-                    </tr>
-                </tbody>
+            <tbody id="studentTable">
+                <tr><td colspan="7">Loading students...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-            </table>
+<!-- REGISTERED FACULTY DETAILS -->
 
-        </div>
+<div class="section">
+    <h2>Registered Faculty Details</h2>
 
+    <button class="refresh-btn" onclick="loadFaculty()">
+        Refresh Faculty
+    </button>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>Department</th>
+                    <th>Email</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="facultyTable">
+                <tr><td colspan="6">Loading faculty...</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <!-- ADD STUDENT -->
-
-    <div class="section">
-
-        <h2>Add Student</h2>
-
-        <form id="studentForm">
-
-            <div class="form-grid">
-
-                <input type="text" id="rollNo"
-                    placeholder="Roll Number" required>
-
-                <input type="text" id="studentName"
-                    placeholder="Student Name" required>
-
-                <input type="text" id="studentClass"
-                    placeholder="Class" required>
-
-                <input type="tel" id="mobileNo"
-                    placeholder="Parent Mobile Number"
-                    pattern="[0-9]{10}" required>
-
-            </div>
-
-            <button type="submit" class="add-btn">
-                Add Student
-            </button>
-
-        </form>
-
-    </div>
-
-    <!-- STUDENT DETAILS -->
-
-    <div class="section">
-
-        <h2>Student Details</h2>
-
-        <button class="refresh-btn" onclick="loadStudents()">
-            Refresh Students
-        </button>
-
-        <div class="table-wrap">
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Roll Number</th>
-                        <th>Name</th>
-                        <th>Class</th>
-                        <th>Parent Mobile</th>
-                        <th>Registration</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody id="studentTable">
-                    <tr>
-                        <td colspan="7">Loading students...</td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-    <!-- ADD FACULTY -->
-
-    <div class="section">
-
-        <h2>Add Faculty</h2>
-
-        <form id="facultyForm">
-
-            <div class="form-grid">
-
-                <input type="text" id="facultyId"
-                    placeholder="Faculty ID" required>
-
-                <input type="text" id="facultyName"
-                    placeholder="Faculty Name" required>
-
-                <input type="text" id="department"
-                    placeholder="Department" required>
-
-                <input type="email" id="facultyEmail"
-                    placeholder="Faculty Email" required>
-
-            </div>
-
-            <button type="submit" class="add-btn">
-                Add Faculty
-            </button>
-
-        </form>
-
-    </div>
-
-    <!-- FACULTY DETAILS -->
-
-    <div class="section">
-
-        <h2>Faculty Details</h2>
-
-        <button class="refresh-btn" onclick="loadFaculty()">
-            Refresh Faculty
-        </button>
-
-        <div class="table-wrap">
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Faculty ID</th>
-                        <th>Name</th>
-                        <th>Department</th>
-                        <th>Email</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody id="facultyTable">
-                    <tr>
-                        <td colspan="6">Loading faculty...</td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
+    <div id="facultyDetails" class="details-box"></div>
+</div>
 
 </div>
 
@@ -489,999 +377,728 @@
 
 <script>
 
-    // =====================================
-    // BACKEND API URL
-    // =====================================
+const API_URL =
+"https://student-attendance-system-production-d132.up.railway.app";
 
-    const API_URL =
-        "https://student-attendance-system-production-d132.up.railway.app";
+const messageBox = document.getElementById("message");
 
-    const messageBox = document.getElementById("message");
+const attendanceMessage =
+document.getElementById("attendanceMessage");
 
-    const attendanceMessage =
-        document.getElementById("attendanceMessage");
+// =====================================
+// ADMIN TOKEN
+// =====================================
 
+function getAdminToken() {
+    return (
+        sessionStorage.getItem("adminToken") ||
+        sessionStorage.getItem("token") ||
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("token") ||
+        ""
+    );
+}
 
-    // =====================================
-    // ADMIN TOKEN
-    // =====================================
+// =====================================
+// API REQUEST
+// =====================================
 
-    function getAdminToken() {
+async function apiRequest(endpoint, options = {}) {
+    const response = await fetch(API_URL + endpoint, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        }
+    });
 
-        return (
-            sessionStorage.getItem("adminToken") ||
-            sessionStorage.getItem("token") ||
-            localStorage.getItem("adminToken") ||
-            localStorage.getItem("token") ||
-            ""
+    const text = await response.text();
+    let data;
+
+    try {
+        data = text ? JSON.parse(text) : {};
+    } catch {
+        throw new Error("Invalid server response.");
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            data.message || data.error || `Server error: ${response.status}`
         );
     }
 
+    return data;
+}
 
-    // =====================================
-    // COMMON API FUNCTION
-    // =====================================
+async function adminApiRequest(endpoint, options = {}) {
+    const token = getAdminToken();
 
-    async function apiRequest(endpoint, options = {}) {
+    if (!token) {
+        throw new Error("Admin token not found. Please login again.");
+    }
 
-        const response = await fetch(API_URL + endpoint, {
-            ...options,
-            headers: {
-                "Content-Type": "application/json",
-                ...(options.headers || {})
-            }
-        });
-
-        const text = await response.text();
-
-        let data;
-
-        try {
-            data = text ? JSON.parse(text) : {};
-        } catch {
-            throw new Error(
-                "Invalid server response. Check backend API routes."
-            );
+    return apiRequest(endpoint, {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            "Authorization": "Bearer " + token
         }
-
-        if (!response.ok) {
-            throw new Error(
-                data.message ||
-                data.error ||
-                `Server error: ${response.status}`
-            );
-        }
-
-        return data;
-    }
-
-
-    // =====================================
-    // ADMIN AUTHENTICATED API FUNCTION
-    // =====================================
-
-    async function adminApiRequest(endpoint, options = {}) {
-
-        const token = getAdminToken();
-
-        if (!token) {
-            throw new Error(
-                "Admin token not found. Please login again."
-            );
-        }
-
-        return apiRequest(endpoint, {
-            ...options,
-            headers: {
-                ...(options.headers || {}),
-                "Authorization": "Bearer " + token
-            }
-        });
-    }
-
-
-    // =====================================
-    // DISPLAY MESSAGE
-    // =====================================
-
-    function showMessage(message, type = "error") {
-        messageBox.textContent = message;
-        messageBox.className = type;
-    }
-
-    function showAttendanceMessage(message, type = "error") {
-        attendanceMessage.textContent = message;
-        attendanceMessage.className = type;
-    }
-
-
-    // =====================================
-    // GENERATE TEMPORARY FACULTY PASSWORD
-    // =====================================
-
-    function generateTemporaryPassword() {
-
-        const characters =
-            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$";
-
-        const randomValues = new Uint32Array(12);
-
-        crypto.getRandomValues(randomValues);
-
-        return Array.from(randomValues)
-            .map(value => characters[value % characters.length])
-            .join("");
-    }
-
-
-    // =====================================
-    // LOAD STUDENTS
-    // =====================================
-
-    async function loadStudents() {
-
-        const table = document.getElementById("studentTable");
-
-        table.innerHTML =
-            '<tr><td colspan="7">Loading students...</td></tr>';
-
-        try {
-
-            const data = await apiRequest("/api/students");
-
-            const students = Array.isArray(data)
-                ? data
-                : data.students || data.data || [];
-
-            document.getElementById("totalStudents").textContent =
-                students.length;
-
-            table.innerHTML = "";
-
-            if (students.length === 0) {
-
-                table.innerHTML =
-                    '<tr><td colspan="7">No students found.</td></tr>';
-
-                return;
-            }
-
-            students.forEach(student => {
-
-                const row = document.createElement("tr");
-
-                const values = [
-                    student.id,
-                    student.roll_no || student.rollNo,
-                    student.name,
-                    student.student_class || student.studentClass,
-                    student.parent_mobile || student.mobileNo,
-                    student.is_registered ? "Registered" : "Not Registered"
-                ];
-
-                values.forEach(value => {
-
-                    const cell = document.createElement("td");
-                    cell.textContent = value ?? "-";
-                    row.appendChild(cell);
-
-                });
-
-                const actionCell = document.createElement("td");
-
-                const deleteButton = document.createElement("button");
-
-                deleteButton.textContent = "Delete";
-                deleteButton.className = "delete-btn";
-
-                deleteButton.onclick = () =>
-                    deleteStudent(student.id);
-
-                actionCell.appendChild(deleteButton);
-                row.appendChild(actionCell);
-                table.appendChild(row);
-
-            });
-
-            loadClassOptions(students);
-
-        } catch (error) {
-
-            table.innerHTML =
-                '<tr><td colspan="7">Failed to fetch students: ' +
-                escapeHTML(error.message) + '</td></tr>';
-
-            showMessage(error.message);
-
-            console.error("Student loading error:", error);
-        }
-    }
-
-
-    // =====================================
-    // LOAD AVAILABLE CLASSES
-    // =====================================
-
-    function loadClassOptions(students) {
-
-        const classSelect =
-            document.getElementById("attendanceClass");
-
-        const currentValue = classSelect.value;
-
-        const classes = [
-            ...new Set(
-                students
-                    .map(student =>
-                        student.student_class || student.studentClass
-                    )
-                    .filter(Boolean)
-            )
-        ];
-
-        classSelect.innerHTML =
-            '<option value="">Select Class</option>';
-
-        classes.sort().forEach(className => {
-
-            const option = document.createElement("option");
-
-            option.value = className;
-            option.textContent = className;
-
-            classSelect.appendChild(option);
-
-        });
-
-        if (classes.includes(currentValue)) {
-            classSelect.value = currentValue;
-        }
-    }
-
-
-    // =====================================
-    // ADD STUDENT
-    // =====================================
-
-    document.getElementById("studentForm")
-        .addEventListener("submit", async function(event) {
-
-        event.preventDefault();
-
-        const student = {
-
-            rollNo: document.getElementById("rollNo").value.trim(),
-
-            name: document.getElementById("studentName").value.trim(),
-
-            studentClass:
-                document.getElementById("studentClass").value.trim(),
-
-            mobileNo: document.getElementById("mobileNo").value.trim()
-
-        };
-
-        try {
-
-            await apiRequest("/api/students", {
-                method: "POST",
-                body: JSON.stringify(student)
-            });
-
-            showMessage("Student added successfully!", "success");
-
-            this.reset();
-
-            loadStudents();
-
-        } catch (error) {
-
-            showMessage(error.message);
-
-            console.error("Add student error:", error);
-        }
-
     });
-
-
-    // =====================================
-    // DELETE STUDENT
-    // =====================================
-
-    async function deleteStudent(id) {
-
-        if (!confirm("Are you sure you want to delete this student?")) {
-            return;
-        }
-
-        try {
-
-            await apiRequest(
-                "/api/students/" + encodeURIComponent(id),
-                {
-                    method: "DELETE"
-                }
-            );
-
-            showMessage("Student deleted successfully!", "success");
-
-            loadStudents();
-
-        } catch (error) {
-
-            showMessage(error.message);
-
-            console.error("Delete student error:", error);
-        }
-    }
-
-
-    // =====================================
-    // LOAD FACULTY
-    // =====================================
-
-    async function loadFaculty() {
-
-        const table = document.getElementById("facultyTable");
-
-        table.innerHTML =
-            '<tr><td colspan="6">Loading faculty...</td></tr>';
-
-        try {
-
-            const data = await apiRequest("/api/faculty");
-
-            const faculty = Array.isArray(data)
-                ? data
-                : data.faculty || data.data || [];
-
-            document.getElementById("totalFaculty").textContent =
-                faculty.length;
-
-            table.innerHTML = "";
-
-            if (faculty.length === 0) {
-
-                table.innerHTML =
-                    '<tr><td colspan="6">No faculty found.</td></tr>';
-
-                return;
-            }
-
-            faculty.forEach(person => {
-
-                const row = document.createElement("tr");
-
-                const values = [
-                    person.id,
-                    person.faculty_id || "-",
-                    person.name,
-                    person.department,
-                    person.email
-                ];
-
-                values.forEach(value => {
-
-                    const cell = document.createElement("td");
-                    cell.textContent = value ?? "-";
-                    row.appendChild(cell);
-
-                });
-
-                const actionCell = document.createElement("td");
-
-                const deleteButton = document.createElement("button");
-
-                deleteButton.textContent = "Delete";
-                deleteButton.className = "delete-btn";
-
-                deleteButton.onclick = () =>
-                    deleteFaculty(person.id);
-
-                actionCell.appendChild(deleteButton);
-                row.appendChild(actionCell);
-                table.appendChild(row);
-
-            });
-
-        } catch (error) {
-
-            table.innerHTML =
-                '<tr><td colspan="6">Failed to fetch faculty: ' +
-                escapeHTML(error.message) + '</td></tr>';
-
-            showMessage(error.message);
-
-            console.error("Faculty loading error:", error);
-        }
-    }
-
-
-    // =====================================
-    // ADD FACULTY
-    // =====================================
-
-    document.getElementById("facultyForm")
-        .addEventListener("submit", async function(event) {
-
-        event.preventDefault();
-
-        const temporaryPassword = generateTemporaryPassword();
-
-        const faculty = {
-
-            faculty_id:
-                document.getElementById("facultyId").value.trim(),
-
-            name:
-                document.getElementById("facultyName").value.trim(),
-
-            department:
-                document.getElementById("department").value.trim(),
-
-            email:
-                document.getElementById("facultyEmail").value.trim(),
-
-            password: temporaryPassword
-
-        };
-
-        try {
-
-            await apiRequest("/api/faculty/register", {
-                method: "POST",
-                body: JSON.stringify(faculty)
-            });
-
-            showMessage("Faculty added successfully!", "success");
-
-            this.reset();
-
-            alert(
-                "Faculty added successfully!\n\n" +
-                "Temporary Password: " + temporaryPassword +
-                "\n\nPlease share this password securely with the faculty member."
-            );
-
-            loadFaculty();
-
-        } catch (error) {
-
-            showMessage(error.message);
-
-            console.error("Add faculty error:", error);
-        }
-
-    });
-
-
-    // =====================================
-    // DELETE FACULTY
-    // =====================================
-
-    async function deleteFaculty(id) {
-
-        if (!confirm("Are you sure you want to delete this faculty?")) {
-            return;
-        }
-
-        try {
-
-            await apiRequest(
-                "/api/faculty/" + encodeURIComponent(id),
-                {
-                    method: "DELETE"
-                }
-            );
-
-            showMessage("Faculty deleted successfully!", "success");
-
-            loadFaculty();
-
-        } catch (error) {
-
-            showMessage(error.message);
-
-            console.error("Delete faculty error:", error);
-        }
-    }
-
-
-    // =====================================
-    // LOAD ATTENDANCE FOR ADMIN
-    // =====================================
-
-    async function loadAttendance() {
-
-        const table = document.getElementById("attendanceTable");
-
-        const className =
-            document.getElementById("attendanceClass").value.trim();
-
-        const rollNo =
-            document.getElementById("searchRollNo").value.trim();
-
-        const date =
-            document.getElementById("attendanceDate").value;
-
-        const period =
-            document.getElementById("attendancePeriod").value;
-
-        if (!className && !rollNo) {
-
-            showAttendanceMessage(
-                "Please select a class or enter a roll number."
-            );
-
-            return;
-        }
-
-        table.innerHTML =
-            '<tr><td colspan="8">Loading attendance...</td></tr>';
-
-        showAttendanceMessage("");
-
-        try {
-
-            let endpoint;
-
-            if (rollNo) {
-
-                endpoint =
-                    "/api/attendance/search/" +
-                    encodeURIComponent(rollNo);
-
-            } else {
-
-                endpoint =
-                    "/api/attendance/class/" +
-                    encodeURIComponent(className);
-
-            }
-
-            const data = await apiRequest(endpoint);
-
-            if (!Array.isArray(data)) {
-                throw new Error("Unexpected attendance response.");
-            }
-
-            let records = data.filter(record =>
-                record.attendance_id !== null &&
-                record.attendance_id !== undefined
-            );
-
-            if (className) {
-
-                records = records.filter(record =>
-                    String(record.student_class) === String(className)
-                );
-
-            }
-
-            if (date) {
-
-                records = records.filter(record =>
-                    String(record.attendance_date).slice(0, 10) === date
-                );
-
-            }
-
-            if (period) {
-
-                records = records.filter(record =>
-                    Number(record.period_number) === Number(period)
-                );
-
-            }
-
-            displayAttendance(records);
-
-            if (records.length === 0) {
-
-                showAttendanceMessage(
-                    "No saved attendance records found for these filters.",
-                    "error"
-                );
-
-            } else {
-
-                showAttendanceMessage(
-                    records.length + " attendance record(s) found.",
-                    "success"
-                );
-
-            }
-
-        } catch (error) {
-
-            table.innerHTML =
-                '<tr><td colspan="8">' +
-                escapeHTML(error.message) +
-                '</td></tr>';
-
-            showAttendanceMessage(error.message);
-
-            console.error("Attendance loading error:", error);
-        }
-    }
-
-
-    // =====================================
-    // DISPLAY ATTENDANCE TABLE
-    // =====================================
-
-    function displayAttendance(records) {
-
-        const table = document.getElementById("attendanceTable");
+}
+
+// =====================================
+// MESSAGES
+// =====================================
+
+function showMessage(message, type = "error") {
+    messageBox.textContent = message;
+    messageBox.className = type;
+}
+
+function showAttendanceMessage(message, type = "error") {
+    attendanceMessage.textContent = message;
+    attendanceMessage.className = type;
+}
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+// =====================================
+// LOAD STUDENTS
+// =====================================
+
+async function loadStudents() {
+    const table = document.getElementById("studentTable");
+
+    table.innerHTML = '<tr><td colspan="7">Loading students...</td></tr>';
+
+    try {
+        const data = await apiRequest("/api/students");
+
+        const students = Array.isArray(data)
+            ? data
+            : data.students || data.data || [];
+
+        document.getElementById("totalStudents").textContent =
+            students.length;
 
         table.innerHTML = "";
 
-        if (records.length === 0) {
-
+        if (students.length === 0) {
             table.innerHTML =
-                '<tr><td colspan="8">No saved attendance records.</td></tr>';
-
+                '<tr><td colspan="7">No students found.</td></tr>';
+            loadClassOptions([]);
             return;
         }
 
-        records.forEach(record => {
-
+        students.forEach(student => {
             const row = document.createElement("tr");
 
             const values = [
-                record.roll_no,
-                record.student_name,
-                record.student_class,
-                record.attendance_date
-                    ? String(record.attendance_date).slice(0, 10)
-                    : "-",
-                record.period_number
-                    ? "Period " + record.period_number
-                    : "Not recorded",
-                record.subject || "Not recorded"
+                student.id,
+                student.roll_no || student.rollNo,
+                student.name,
+                student.student_class || student.studentClass,
+                student.parent_mobile || student.mobileNo,
+                student.is_registered ? "Registered" : "Not Registered"
             ];
 
             values.forEach(value => {
-
                 const cell = document.createElement("td");
                 cell.textContent = value ?? "-";
                 row.appendChild(cell);
-
             });
 
-            const statusCell = document.createElement("td");
+            const actionCell = document.createElement("td");
+            const deleteButton = document.createElement("button");
 
-            statusCell.textContent = record.status;
+            deleteButton.textContent = "Delete";
+            deleteButton.className = "delete-btn";
+            deleteButton.onclick = () => deleteStudent(student.id);
 
-            statusCell.className =
-                record.status === "Present"
-                    ? "status-present"
-                    : "status-absent";
+            actionCell.appendChild(deleteButton);
+            row.appendChild(actionCell);
+            table.appendChild(row);
+        });
 
-            row.appendChild(statusCell);
+        loadClassOptions(students);
+
+    } catch (error) {
+        table.innerHTML =
+            `<tr><td colspan="7">Failed to fetch students: ${escapeHTML(error.message)}</td></tr>`;
+        showMessage(error.message);
+        console.error(error);
+    }
+}
+
+// =====================================
+// LOAD CLASSES
+// =====================================
+
+function loadClassOptions(students) {
+    const classSelect = document.getElementById("attendanceClass");
+    const currentValue = classSelect.value;
+
+    const classes = [
+        ...new Set(
+            students.map(student =>
+                student.student_class || student.studentClass
+            ).filter(Boolean)
+        )
+    ];
+
+    classSelect.innerHTML = '<option value="">Select Class</option>';
+
+    classes.sort().forEach(className => {
+        const option = document.createElement("option");
+        option.value = className;
+        option.textContent = className;
+        classSelect.appendChild(option);
+    });
+
+    if (classes.includes(currentValue)) {
+        classSelect.value = currentValue;
+    }
+}
+
+// =====================================
+// ADD STUDENT
+// =====================================
+
+document.getElementById("studentForm")
+.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const student = {
+        rollNo: document.getElementById("rollNo").value.trim(),
+        name: document.getElementById("studentName").value.trim(),
+        studentClass: document.getElementById("studentClass").value.trim(),
+        mobileNo: document.getElementById("mobileNo").value.trim()
+    };
+
+    try {
+        await apiRequest("/api/students", {
+            method: "POST",
+            body: JSON.stringify(student)
+        });
+
+        showMessage("Student added successfully!", "success");
+        this.reset();
+        loadStudents();
+
+    } catch (error) {
+        showMessage(error.message);
+        console.error(error);
+    }
+});
+
+// =====================================
+// DELETE STUDENT
+// =====================================
+
+async function deleteStudent(id) {
+    if (!confirm("Are you sure you want to delete this student?")) return;
+
+    try {
+        await apiRequest("/api/students/" + encodeURIComponent(id), {
+            method: "DELETE"
+        });
+
+        showMessage("Student deleted successfully!", "success");
+        loadStudents();
+
+    } catch (error) {
+        showMessage(error.message);
+    }
+}
+
+// =====================================
+// LOAD REGISTERED FACULTY
+// =====================================
+
+async function loadFaculty() {
+    const table = document.getElementById("facultyTable");
+    const detailsBox = document.getElementById("facultyDetails");
+
+    table.innerHTML = '<tr><td colspan="6">Loading faculty...</td></tr>';
+    detailsBox.style.display = "none";
+
+    try {
+        const data = await apiRequest("/api/faculty");
+
+        const faculty = Array.isArray(data)
+            ? data
+            : data.faculty || data.data || [];
+
+        document.getElementById("totalFaculty").textContent =
+            faculty.length;
+
+        table.innerHTML = "";
+
+        if (faculty.length === 0) {
+            table.innerHTML =
+                '<tr><td colspan="6">No registered faculty found.</td></tr>';
+            return;
+        }
+
+        faculty.forEach(person => {
+            const row = document.createElement("tr");
+
+            [
+                person.id,
+                person.name,
+                person.mobile,
+                person.department,
+                person.email
+            ].forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value ?? "-";
+                row.appendChild(cell);
+            });
 
             const actionCell = document.createElement("td");
+            actionCell.className = "faculty-actions";
+
+            const viewButton = document.createElement("button");
+            viewButton.textContent = "View Details";
+            viewButton.className = "view-btn";
+            viewButton.onclick = () => viewFacultyDetails(person);
 
             const editButton = document.createElement("button");
-
             editButton.textContent = "Edit";
             editButton.className = "edit-btn";
+            editButton.onclick = () => editFaculty(person, row);
 
-            editButton.onclick = () => {
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete";
+            deleteButton.className = "delete-btn";
+            deleteButton.onclick = () => deleteFaculty(person.id);
 
-                editAttendance(
-                    record,
-                    statusCell,
-                    actionCell,
-                    editButton
-                );
-
-            };
-
-            actionCell.appendChild(editButton);
-
+            actionCell.append(viewButton, editButton, deleteButton);
             row.appendChild(actionCell);
-
             table.appendChild(row);
-
         });
+
+    } catch (error) {
+        table.innerHTML =
+            `<tr><td colspan="6">Failed to fetch faculty: ${escapeHTML(error.message)}</td></tr>`;
+        showMessage(error.message);
+        console.error("Faculty loading error:", error);
+    }
+}
+
+// =====================================
+// VIEW FACULTY DETAILS
+// =====================================
+
+function viewFacultyDetails(person) {
+    const box = document.getElementById("facultyDetails");
+
+    box.innerHTML = `
+        <h3>Faculty Information</h3>
+        <p><strong>Faculty ID:</strong> ${escapeHTML(person.id)}</p>
+        <p><strong>Name:</strong> ${escapeHTML(person.name)}</p>
+        <p><strong>Mobile:</strong> ${escapeHTML(person.mobile)}</p>
+        <p><strong>Department:</strong> ${escapeHTML(person.department)}</p>
+        <p><strong>Email:</strong> ${escapeHTML(person.email)}</p>
+    `;
+
+    box.style.display = "block";
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// =====================================
+// EDIT FACULTY
+// =====================================
+
+function editFaculty(person, row) {
+    row.innerHTML = "";
+
+    const fields = ["name", "mobile", "department", "email"];
+    const values = [
+        person.id,
+        person.name,
+        person.mobile,
+        person.department,
+        person.email
+    ];
+
+    const idCell = document.createElement("td");
+    idCell.textContent = person.id;
+    row.appendChild(idCell);
+
+    const inputs = {};
+
+    fields.forEach(field => {
+        const cell = document.createElement("td");
+        const input = document.createElement("input");
+
+        input.type = field === "email" ? "email" : "text";
+        input.value = person[field] || "";
+        input.required = true;
+
+        inputs[field] = input;
+        cell.appendChild(input);
+        row.appendChild(cell);
+    });
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "faculty-actions";
+
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Save";
+    saveButton.className = "save-btn";
+
+    const cancelButton = document.createElement("button");
+    cancelButton.textContent = "Cancel";
+    cancelButton.className = "cancel-btn";
+
+    saveButton.onclick = async () => {
+        const updatedFaculty = {
+            name: inputs.name.value.trim(),
+            mobile: inputs.mobile.value.trim(),
+            department: inputs.department.value.trim(),
+            email: inputs.email.value.trim()
+        };
+
+        if (Object.values(updatedFaculty).some(value => !value)) {
+            alert("Please fill all faculty details.");
+            return;
+        }
+
+        if (!confirm("Save the updated faculty details?")) return;
+
+        saveButton.disabled = true;
+
+        try {
+            await adminApiRequest(
+                "/api/faculty/" + encodeURIComponent(person.id),
+                {
+                    method: "PUT",
+                    body: JSON.stringify(updatedFaculty)
+                }
+            );
+
+            showMessage("Faculty details updated successfully!", "success");
+            loadFaculty();
+
+        } catch (error) {
+            saveButton.disabled = false;
+            showMessage(error.message);
+            console.error("Faculty update error:", error);
+        }
+    };
+
+    cancelButton.onclick = () => loadFaculty();
+
+    actionCell.append(saveButton, cancelButton);
+    row.appendChild(actionCell);
+}
+
+// =====================================
+// DELETE FACULTY
+// =====================================
+
+async function deleteFaculty(id) {
+    if (!confirm("Are you sure you want to delete this faculty?")) return;
+
+    try {
+        await apiRequest("/api/faculty/" + encodeURIComponent(id), {
+            method: "DELETE"
+        });
+
+        showMessage("Faculty deleted successfully!", "success");
+        loadFaculty();
+
+    } catch (error) {
+        showMessage(error.message);
+        console.error(error);
+    }
+}
+
+// =====================================
+// LOAD ATTENDANCE
+// =====================================
+
+async function loadAttendance() {
+    const table = document.getElementById("attendanceTable");
+
+    const className = document.getElementById("attendanceClass").value.trim();
+    const rollNo = document.getElementById("searchRollNo").value.trim();
+    const date = document.getElementById("attendanceDate").value;
+    const period = document.getElementById("attendancePeriod").value;
+
+    if (!className && !rollNo) {
+        showAttendanceMessage("Please select a class or enter a roll number.");
+        return;
     }
 
+    table.innerHTML = '<tr><td colspan="8">Loading attendance...</td></tr>';
+    showAttendanceMessage("");
 
-    // =====================================
-    // EDIT ATTENDANCE STATUS
-    // =====================================
+    try {
+        const endpoint = rollNo
+            ? "/api/attendance/search/" + encodeURIComponent(rollNo)
+            : "/api/attendance/class/" + encodeURIComponent(className);
 
-    function editAttendance(
-        record,
-        statusCell,
-        actionCell,
-        editButton
-    ) {
+        const data = await apiRequest(endpoint);
 
-        const oldStatus = record.status;
+        if (!Array.isArray(data)) {
+            throw new Error("Unexpected attendance response.");
+        }
 
-        statusCell.innerHTML = "";
+        let records = data.filter(record =>
+            record.attendance_id !== null &&
+            record.attendance_id !== undefined
+        );
 
-        const select = document.createElement("select");
+        if (className) {
+            records = records.filter(record =>
+                String(record.student_class) === String(className)
+            );
+        }
 
-        ["Present", "Absent"].forEach(status => {
+        if (date) {
+            records = records.filter(record =>
+                String(record.attendance_date).slice(0, 10) === date
+            );
+        }
 
-            const option = document.createElement("option");
+        if (period) {
+            records = records.filter(record =>
+                Number(record.period_number) === Number(period)
+            );
+        }
 
-            option.value = status;
-            option.textContent = status;
+        displayAttendance(records);
 
-            if (status === oldStatus) {
-                option.selected = true;
-            }
+        showAttendanceMessage(
+            records.length
+                ? records.length + " attendance record(s) found."
+                : "No saved attendance records found for these filters.",
+            records.length ? "success" : "error"
+        );
 
-            select.appendChild(option);
+    } catch (error) {
+        table.innerHTML =
+            `<tr><td colspan="8">${escapeHTML(error.message)}</td></tr>`;
+        showAttendanceMessage(error.message);
+        console.error(error);
+    }
+}
 
+// =====================================
+// DISPLAY ATTENDANCE
+// =====================================
+
+function displayAttendance(records) {
+    const table = document.getElementById("attendanceTable");
+    table.innerHTML = "";
+
+    if (!records.length) {
+        table.innerHTML =
+            '<tr><td colspan="8">No saved attendance records.</td></tr>';
+        return;
+    }
+
+    records.forEach(record => {
+        const row = document.createElement("tr");
+
+        [
+            record.roll_no,
+            record.student_name,
+            record.student_class,
+            record.attendance_date
+                ? String(record.attendance_date).slice(0, 10) : "-",
+            record.period_number ? "Period " + record.period_number : "Not recorded",
+            record.subject || "Not recorded"
+        ].forEach(value => {
+            const cell = document.createElement("td");
+            cell.textContent = value ?? "-";
+            row.appendChild(cell);
         });
 
-        statusCell.appendChild(select);
+        const statusCell = document.createElement("td");
+        statusCell.textContent = record.status;
+        statusCell.className =
+            record.status === "Present" ? "status-present" : "status-absent";
+        row.appendChild(statusCell);
+
+        const actionCell = document.createElement("td");
+        const editButton = document.createElement("button");
+
+        editButton.textContent = "Edit";
+        editButton.className = "edit-btn";
+        editButton.onclick = () =>
+            editAttendance(record, statusCell, actionCell);
+
+        actionCell.appendChild(editButton);
+        row.appendChild(actionCell);
+        table.appendChild(row);
+    });
+}
+
+// =====================================
+// EDIT ATTENDANCE STATUS
+// =====================================
+
+function editAttendance(record, statusCell, actionCell) {
+    const oldStatus = record.status;
+    const select = document.createElement("select");
+
+    ["Present", "Absent"].forEach(status => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status;
+        option.selected = status === oldStatus;
+        select.appendChild(option);
+    });
+
+    statusCell.innerHTML = "";
+    statusCell.appendChild(select);
+    actionCell.innerHTML = "";
+
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "Save";
+    saveButton.className = "save-btn";
+
+    const cancelButton = document.createElement("button");
+    cancelButton.textContent = "Cancel";
+    cancelButton.className = "cancel-btn";
+
+    saveButton.onclick = async () => {
+        const newStatus = select.value;
+
+        if (newStatus === oldStatus) {
+            showAttendanceMessage("No attendance changes were made.");
+            return;
+        }
+
+        if (!confirm(`Change attendance from ${oldStatus} to ${newStatus}?`)) return;
+
+        saveButton.disabled = true;
+
+        try {
+            await adminApiRequest(
+                "/api/attendance/admin/edit/" +
+                encodeURIComponent(record.attendance_id),
+                {
+                    method: "PUT",
+                    body: JSON.stringify({ status: newStatus })
+                }
+            );
+
+            showAttendanceMessage("Attendance updated successfully!", "success");
+            loadAttendance();
+            loadTodaySummary();
+
+        } catch (error) {
+            saveButton.disabled = false;
+            showAttendanceMessage(error.message);
+            console.error(error);
+        }
+    };
+
+    cancelButton.onclick = () => {
+        statusCell.textContent = oldStatus;
+        statusCell.className =
+            oldStatus === "Present" ? "status-present" : "status-absent";
 
         actionCell.innerHTML = "";
 
-        const saveButton = document.createElement("button");
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.className = "edit-btn";
+        editButton.onclick = () =>
+            editAttendance(record, statusCell, actionCell);
 
-        saveButton.textContent = "Save";
-        saveButton.className = "save-btn";
+        actionCell.appendChild(editButton);
+    };
 
-        const cancelButton = document.createElement("button");
+    actionCell.append(saveButton, cancelButton);
+}
 
-        cancelButton.textContent = "Cancel";
-        cancelButton.className = "cancel-btn";
+// =====================================
+// RESET ATTENDANCE FILTERS
+// =====================================
 
-        cancelButton.style.marginLeft = "5px";
+function resetAttendanceFilters() {
+    document.getElementById("attendanceClass").value = "";
+    document.getElementById("attendanceDate").value = "";
+    document.getElementById("attendancePeriod").value = "";
+    document.getElementById("searchRollNo").value = "";
 
-        saveButton.onclick = async () => {
+    document.getElementById("attendanceTable").innerHTML =
+        '<tr><td colspan="8">Select a class or search by roll number.</td></tr>';
 
-            const newStatus = select.value;
+    showAttendanceMessage("");
+}
 
-            if (newStatus === oldStatus) {
+// =====================================
+// TODAY SUMMARY
+// =====================================
 
-                showAttendanceMessage(
-                    "No attendance changes were made.",
-                    "error"
-                );
+async function loadTodaySummary() {
+    try {
+        const data = await apiRequest(
+            "/api/attendance/summary/today?date=" + getTodayDate()
+        );
 
-                return;
-            }
+        document.getElementById("presentToday").textContent =
+            data.present ?? 0;
 
-            if (!confirm(
-                "Change attendance from " +
-                oldStatus + " to " + newStatus + "?"
-            )) {
-                return;
-            }
+        document.getElementById("absentToday").textContent =
+            data.absent ?? 0;
 
-            saveButton.disabled = true;
-
-            try {
-
-                await adminApiRequest(
-                    "/api/attendance/admin/edit/" +
-                    encodeURIComponent(record.attendance_id),
-                    {
-                        method: "PUT",
-                        body: JSON.stringify({
-                            status: newStatus
-                        })
-                    }
-                );
-
-                record.status = newStatus;
-
-                statusCell.textContent = newStatus;
-
-                statusCell.className =
-                    newStatus === "Present"
-                        ? "status-present"
-                        : "status-absent";
-
-                actionCell.innerHTML = "";
-
-                const newEditButton =
-                    document.createElement("button");
-
-                newEditButton.textContent = "Edit";
-                newEditButton.className = "edit-btn";
-
-                newEditButton.onclick = () => {
-
-                    editAttendance(
-                        record,
-                        statusCell,
-                        actionCell,
-                        newEditButton
-                    );
-
-                };
-
-                actionCell.appendChild(newEditButton);
-
-                showAttendanceMessage(
-                    "Attendance updated successfully!",
-                    "success"
-                );
-
-                loadTodaySummary();
-
-            } catch (error) {
-
-                saveButton.disabled = false;
-
-                showAttendanceMessage(error.message);
-
-                console.error("Attendance update error:", error);
-            }
-
-        };
-
-        cancelButton.onclick = () => {
-
-            statusCell.textContent = oldStatus;
-
-            statusCell.className =
-                oldStatus === "Present"
-                    ? "status-present"
-                    : "status-absent";
-
-            actionCell.innerHTML = "";
-
-            const newEditButton =
-                document.createElement("button");
-
-            newEditButton.textContent = "Edit";
-            newEditButton.className = "edit-btn";
-
-            newEditButton.onclick = () => {
-
-                editAttendance(
-                    record,
-                    statusCell,
-                    actionCell,
-                    newEditButton
-                );
-
-            };
-
-            actionCell.appendChild(newEditButton);
-
-        };
-
-        actionCell.appendChild(saveButton);
-        actionCell.appendChild(cancelButton);
+    } catch (error) {
+        console.error("Attendance summary error:", error);
     }
+}
 
+// =====================================
+// DATE
+// =====================================
 
-    // =====================================
-    // RESET ATTENDANCE FILTERS
-    // =====================================
+function getTodayDate() {
+    const today = new Date();
 
-    function resetAttendanceFilters() {
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
 
-        document.getElementById("attendanceClass").value = "";
+// =====================================
+// LOGOUT
+// =====================================
 
-        document.getElementById("attendanceDate").value = "";
+function logout() {
+    if (confirm("Are you sure you want to logout?")) {
+        sessionStorage.removeItem("adminToken");
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("token");
 
-        document.getElementById("attendancePeriod").value = "";
-
-        document.getElementById("searchRollNo").value = "";
-
-        document.getElementById("attendanceTable").innerHTML =
-            '<tr><td colspan="8">Select a class or search by roll number.</td></tr>';
-
-        showAttendanceMessage("");
-
+        window.location.href = "admin-login.html";
     }
+}
 
+// =====================================
+// PAGE LOAD
+// =====================================
 
-    // =====================================
-    // LOAD TODAY'S SUMMARY
-    // =====================================
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("attendanceDate").value = getTodayDate();
 
-    async function loadTodaySummary() {
-
-        const today = getTodayDate();
-
-        try {
-
-            const data = await apiRequest(
-                "/api/attendance/summary/today?date=" + today
-            );
-
-            document.getElementById("presentToday").textContent =
-                data.present ?? 0;
-
-            document.getElementById("absentToday").textContent =
-                data.absent ?? 0;
-
-        } catch (error) {
-
-            console.error("Attendance summary error:", error);
-
-        }
-    }
-
-
-    // =====================================
-    // GET LOCAL DATE
-    // =====================================
-
-    function getTodayDate() {
-
-        const today = new Date();
-
-        const year = today.getFullYear();
-
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-
-        const day = String(today.getDate()).padStart(2, "0");
-
-        return `${year}-${month}-${day}`;
-    }
-
-
-    // =====================================
-    // ESCAPE HTML
-    // =====================================
-
-    function escapeHTML(value) {
-
-        return String(value).replace(/[&<>"']/g, char => ({
-
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-
-        })[char]);
-
-    }
-
-
-    // =====================================
-    // LOGOUT
-    // =====================================
-
-    function logout() {
-
-        if (confirm("Are you sure you want to logout?")) {
-
-            sessionStorage.removeItem("adminToken");
-            sessionStorage.removeItem("token");
-
-            localStorage.removeItem("adminToken");
-            localStorage.removeItem("token");
-
-            window.location.href = "admin-login.html";
-
-        }
-    }
-
-
-    // =====================================
-    // LOAD DATA WHEN PAGE OPENS
-    // =====================================
-
-    window.addEventListener("DOMContentLoaded", () => {
-
-        document.getElementById("attendanceDate").value =
-            getTodayDate();
-
-        loadStudents();
-
-        loadFaculty();
-
-        loadTodaySummary();
-
-    });
+    loadStudents();
+    loadFaculty();
+    loadTodaySummary();
+});
 
 </script>
-
 </body>
 </html>
